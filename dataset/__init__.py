@@ -57,7 +57,7 @@ class Dataloader(Sequence):
         second_titles = np.concatenate(second_titles, axis=0)
         labels = np.concatenate(labels, axis=0)
 
-        return (first_titles, second_titles), labels
+        return [first_titles, second_titles], labels
 
     def on_epoch_end(self):
         np.random.shuffle(self.indexes)
@@ -65,4 +65,7 @@ class Dataloader(Sequence):
     def __len__(self):
         return len(self.indexes) // self.batch_size
 
-# TODO: get_data function to avoid direct initilalization
+# TODO: get_data function to avoid direct initialisation
+# TODO: K-fold cross validation using dataloader and custom indexes
+
+
