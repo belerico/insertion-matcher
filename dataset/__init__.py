@@ -65,7 +65,20 @@ class Dataloader(Sequence):
     def __len__(self):
         return len(self.indexes) // self.batch_size
 
-# TODO: get_data function to avoid direct initialisation
+
+def get_train_test_indexes(max_index, train_test_split):
+    indexes = np.arange(max_index)
+    np.random.shuffle(indexes)
+    train_split = int(max_index * train_test_split)
+    return indexes[:train_split], indexes[train_split:]
+
+
+def get_data(data_path, num_words, max_len, batch_size, train_test_split=0.8):
+    dataset = Dataset(data_path, num_words=num_words, max_len=max_len)
+
+    train_indexes, test_indexes = get_train_test_indexes(len(dataset), train_test_split)
+    train_gen = Dataloader(dataset, batch_size, train_indexes)
+    val_gen = Dataloader(dataset, batch_size, test_indexes)
+    return train_gen, val_gen
+
 # TODO: K-fold cross validation using dataloader and custom indexes
-
-

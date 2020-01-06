@@ -1,5 +1,4 @@
-from dataset import Dataset, Dataloader
-import keras
+from dataset import get_data
 from models import get_deep_cross_model
 import argparse
 from utils import dot_similarity
@@ -18,12 +17,12 @@ EMBEDDING_DIM = 10
 
 if __name__ == '__main__':
     print('Loading data')
-    dataset = Dataset(DATA_PATH, num_words=NUM_WORDS, max_len=MAX_LEN)
-    dataloader = Dataloader(dataset, BATCH_SIZE)
+    train_gen, val_gen = get_data(DATA_PATH, NUM_WORDS, MAX_LEN, BATCH_SIZE, train_test_split=0.8)
+
     matrix_similarity_function = dot_similarity
 
     # TODO: create function 'fitting' (useful for HPO)
     model = get_deep_cross_model(NUM_WORDS, EMBEDDING_DIM, MAX_LEN, matrix_similarity_function)
     model.summary()
-    model.compile('adam', loss='binary_crossentropy')
-    model.fit(dataloader)
+    model.compile('adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.fit(train_gen, validation_data=val_gen, epochs=10)
