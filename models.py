@@ -1,5 +1,6 @@
 from keras.models import Model
-from keras.layers import Input, Embedding, Conv2D, Flatten, Dense, Bidirectional, LSTM, Lambda
+from keras.layers import Input, Embedding, Conv2D, Flatten, Dense, Bidirectional, LSTM, Lambda, \
+    MaxPool2D
 
 
 def gen_interaction_matrix(matrix_similarity_function):
@@ -28,6 +29,9 @@ def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension, matrix_
     interaction_matrix = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
     x = Conv2D(16, (3, 3), activation='relu')(interaction_matrix)
+    x = MaxPool2D()(x)
+    x = Conv2D(32, (3, 3), activation='relu')(x)
+    x = MaxPool2D()(x)
     x = Flatten()(x)
     output = Dense(1, activation='sigmoid')(x)
 

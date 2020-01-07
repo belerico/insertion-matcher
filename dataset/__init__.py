@@ -16,8 +16,10 @@ class Dataset:
         self.dataset = np.zeros([len(contents), 2, max_len])
         self.labels = contents[:, 2]
 
-        self.dataset[:, 0, :] = pad_sequences(self.tokenizer.texts_to_sequences(contents[:, 0]), max_len)
-        self.dataset[:, 1, :] = pad_sequences(self.tokenizer.texts_to_sequences(contents[:, 1]), max_len)
+        self.dataset[:, 0, :] = pad_sequences(self.tokenizer.texts_to_sequences(contents[:, 0]),
+                                              max_len)
+        self.dataset[:, 1, :] = pad_sequences(self.tokenizer.texts_to_sequences(contents[:, 1]),
+                                              max_len)
 
     def __len__(self):
         return len(self.dataset)
@@ -81,4 +83,16 @@ def get_data(data_path, num_words, max_len, batch_size, train_test_split=0.8):
     val_gen = Dataloader(dataset, batch_size, test_indexes)
     return train_gen, val_gen
 
-# TODO: K-fold cross validation using dataloader and custom indexes
+
+def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):
+    dataset = Dataset(data_path, num_words=num_words, max_len=max_len)
+    n_samples = len(dataset)
+    indexes = np.arange(n_samples)
+    np.random.shuffle(indexes)
+    for i in range(n_folds):
+        fold_dim = int(n_samples / n_folds)
+        test_indexes = indexes[fold_dim * i: fold_dim * (i + 1)]
+        train_indexes = np.setdiff1d(indexes, test_indexes)
+        train_gen = Dataloader(dataset, batch_size, train_indexes)
+        val_gen = Dataloader(dataset, batch_size, test_indexes)
+        yield train_gen, val_gen

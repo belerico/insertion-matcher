@@ -1,5 +1,5 @@
 import unittest
-from dataset import Dataset, Dataloader
+from dataset import Dataset, Dataloader, get_kfold_generator
 import json
 import numpy as np
 
@@ -54,3 +54,16 @@ class TestDataloader(unittest.TestCase):
 
         self.assertEqual(len(item[0][0][0]), self.max_len)
         self.assertEqual(len(item[0][0][1]), self.max_len)
+
+    def test_10_fold_cv(self):
+        num_words = 10
+        max_len = 10
+        batch_size = 2
+        k_number = 10
+        kfold_gen = get_kfold_generator(self.testfile, num_words, max_len, batch_size, k_number)
+
+        for i in range(k_number):
+            train_gen, val_gen = kfold_gen.__next__()
+            self.assertIsNotNone(train_gen)
+            self.assertIsNotNone(val_gen)
+        self.assertRaises(StopIteration, kfold_gen.__next__)

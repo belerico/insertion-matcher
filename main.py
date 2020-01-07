@@ -9,11 +9,10 @@ parser.add_argument('--dataset-path', type=str, help='path to dataset')
 args = parser.parse_args()
 
 DATA_PATH = args.dataset_path
-DATA_PATH = 'dataset/all_train_small.json'
 NUM_WORDS = 1000
 MAX_LEN = 20
 BATCH_SIZE = 32
-EMBEDDING_DIM = 10
+EMBEDDING_DIM = 100
 
 if __name__ == '__main__':
     print('Loading data')
@@ -25,4 +24,4 @@ if __name__ == '__main__':
     model = get_deep_cross_model(NUM_WORDS, EMBEDDING_DIM, MAX_LEN, matrix_similarity_function)
     model.summary()
     model.compile('adam', loss='binary_crossentropy', metrics=['accuracy'])
-    model.fit(train_gen, validation_data=val_gen, epochs=10)
+    model.fit(train_gen, validation_data=val_gen, epochs=10, verbose=2)
