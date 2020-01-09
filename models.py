@@ -1,6 +1,7 @@
 from keras.models import Model
 from keras.layers import Input, Embedding, Conv2D, Flatten, Dense, Bidirectional, LSTM, Lambda, \
     MaxPool2D
+from keras.initializers import Constant
 
 
 def gen_interaction_matrix(matrix_similarity_function):
@@ -14,11 +15,18 @@ def gen_interaction_matrix(matrix_similarity_function):
     return Lambda(fun)
 
 
-def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension, matrix_similarity_function):
+def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
+                         matrix_similarity_function, embedding_matrix=None, trainable=False):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
 
-    embed = Embedding(vocab_size + 1, embedding_dimension)
+    if embedding_matrix is None:
+        embed = Embedding(vocab_size, embedding_dimension)
+    else:
+        embed = Embedding(vocab_size, embedding_dimension,
+                          embeddings_initializer=Constant(embedding_matrix),
+                          trainable=trainable)
+
     left_encoded = embed(left_input)
     right_encoded = embed(right_input)
 

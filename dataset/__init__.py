@@ -81,7 +81,7 @@ def get_data(data_path, num_words, max_len, batch_size, train_test_split=0.8):
     train_indexes, test_indexes = get_train_test_indexes(len(dataset), train_test_split)
     train_gen = Dataloader(dataset, batch_size, train_indexes)
     val_gen = Dataloader(dataset, batch_size, test_indexes)
-    return train_gen, val_gen
+    return train_gen, val_gen, dataset.tokenizer.word_index
 
 
 def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):
