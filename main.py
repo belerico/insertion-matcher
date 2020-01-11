@@ -1,20 +1,24 @@
 from dataset import get_data
-from models import get_deep_cross_model
 import argparse
 from utils import dot_similarity, get_pretrained_embedding
+from fitness import fit
 
 parser = argparse.ArgumentParser(description='Train model')
 parser.add_argument('--dataset-path', type=str, help='path to dataset')
+parser.add_argument('--exp-path', type=str, help='path to exp')
+
 parser.add_argument('--pretrained-embeddings-path', type=str, help='path to pretrained embedding')
 
 args = parser.parse_args()
 
 DATA_PATH = args.dataset_path
+EXP_DIR = args.exp_path
 PRETRAINED_EMBEDDING_PATH = args.pretrained_embeddings_path
 NUM_WORDS = 1000
 MAX_LEN = 20
 BATCH_SIZE = 32
 EMBEDDING_DIM = 100
+EARLY_STOPPING = 10
 
 if __name__ == '__main__':
     print('Loading data')
@@ -24,14 +28,11 @@ if __name__ == '__main__':
     matrix_similarity_function = dot_similarity
     embedding_matrix = None
 
-    if PRETRAINED_EMBEDDING_PATH != "":
+    if PRETRAINED_EMBEDDING_PATH is not None:
         embedding_matrix = get_pretrained_embedding(PRETRAINED_EMBEDDING_PATH, NUM_WORDS + 1,
                                                     EMBEDDING_DIM, word_index)
 
-    # TODO: create function 'fitting' (useful for HPO)
-    model = get_deep_cross_model(NUM_WORDS + 1, EMBEDDING_DIM, MAX_LEN, matrix_similarity_function,
-                                 embedding_matrix)
-    model.summary()
-    model.compile('adam', loss='binary_crossentropy', metrics=['accuracy'])
-    print("Start training")
-    model.fit(train_gen, validation_data=val_gen, epochs=10, verbose=2)
+    model = fit(train_gen, val_gen, NUM_WORDS, EMBEDDING_DIM, MAX_LEN,
+                matrix_similarity_function,EXP_DIR,
+                EARLY_STOPPING,
+                embedding_matrix=None)
