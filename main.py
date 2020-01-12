@@ -19,6 +19,7 @@ MAX_LEN = 20
 BATCH_SIZE = 32
 EMBEDDING_DIM = 100
 EARLY_STOPPING = 10
+CONVS_DEPTH = [8, 16]
 
 if __name__ == '__main__':
     print('Loading data')
@@ -35,4 +36,4 @@ if __name__ == '__main__':
     model = fit(train_gen, val_gen, NUM_WORDS, EMBEDDING_DIM, MAX_LEN,
                 matrix_similarity_function,EXP_DIR,
                 EARLY_STOPPING,
-                embedding_matrix=None)
+                embedding_matrix=None, convs_depth=CONVS_DEPTH)
