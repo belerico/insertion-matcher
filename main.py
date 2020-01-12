@@ -34,6 +34,6 @@ if __name__ == '__main__':
                                                     EMBEDDING_DIM, word_index)
 
     model = fit(train_gen, val_gen, NUM_WORDS, EMBEDDING_DIM, MAX_LEN,
-                matrix_similarity_function,EXP_DIR,
+                matrix_similarity_function, EXP_DIR,
                 EARLY_STOPPING,
                 embedding_matrix=None, convs_depth=CONVS_DEPTH)

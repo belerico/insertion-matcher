@@ -31,15 +31,17 @@ def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
     left_encoded = embed(left_input)
     right_encoded = embed(right_input)
 
-    bi_left = Bidirectional(LSTM(embedding_dimension, return_sequences=True))(left_encoded)
+    bi_left = Bidirectional(LSTM(embedding_dimension, return_sequences=True), merge_mode='concat')(
+        left_encoded)
 
-    bi_right = Bidirectional(LSTM(embedding_dimension, return_sequences=True))(right_encoded)
+    bi_right = Bidirectional(LSTM(embedding_dimension, return_sequences=True), merge_mode='concat')(
+        right_encoded)
 
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
     for conv_depth in convs_depth:
-      x = Conv2D(conv_depth, (3, 3), activation='relu')(x)
-      x = MaxPool2D()(x)
+        x = Conv2D(conv_depth, (3, 3), activation='relu')(x)
+        x = MaxPool2D()(x)
     x = Flatten()(x)
     output = Dense(1, activation='sigmoid')(x)
 
