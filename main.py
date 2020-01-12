@@ -20,10 +20,11 @@ BATCH_SIZE = 32
 EMBEDDING_DIM = 100
 EARLY_STOPPING = 10
 CONVS_DEPTH = [8, 16]
+DENSES_DEPTH = [32]
 
 if __name__ == '__main__':
     print('Loading data')
-    train_gen, val_gen, word_index = get_data(DATA_PATH, NUM_WORDS, MAX_LEN, BATCH_SIZE,
+    train_gen, val_gen, word_index = gett_data(DATA_PATH, NUM_WORDS, MAX_LEN, BATCH_SIZE,
                                               train_test_split=0.8)
 
     matrix_similarity_function = dot_similarity
@@ -36,4 +37,4 @@ if __name__ == '__main__':
     model = fit(train_gen, val_gen, NUM_WORDS, EMBEDDING_DIM, MAX_LEN,
                 matrix_similarity_function, EXP_DIR,
                 EARLY_STOPPING,
-                embedding_matrix=None, convs_depth=CONVS_DEPTH)
+                embedding_matrix=None, convs_depth=CONVS_DEPTH, denses_depth=DENSES_DEPTH)
