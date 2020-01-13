@@ -16,7 +16,8 @@ def gen_interaction_matrix(matrix_similarity_function):
 
 
 def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
-                         matrix_similarity_function, convs_depth, denses_depth, trainable=False,
+                         matrix_similarity_function, convs_depth, denses_depth, activation,
+                         trainable=False,
                          embedding_matrix=None):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
@@ -47,7 +48,7 @@ def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
     for dense_depth in denses_depth:
         x = Dense(dense_depth, activation='relu')(x)
 
-    output = Dense(1, activation='tanh')(x)
+    output = Dense(1, activation=activation)(x)
 
     model = Model(inputs=[left_input, right_input], outputs=[output])
     return model
