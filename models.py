@@ -47,7 +47,7 @@ def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
     for dense_depth in denses_depth:
         x = Dense(dense_depth, activation='relu')(x)
 
-    output = Dense(1, activation='sigmoid')(x)
+    output = Dense(1, activation='tanh')(x)
 
     model = Model(inputs=[left_input, right_input], outputs=[output])
     return model

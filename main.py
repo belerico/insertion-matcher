@@ -24,7 +24,7 @@ DENSES_DEPTH = [32]
 
 if __name__ == '__main__':
     print('Loading data')
-    train_gen, val_gen, word_index = gett_data(DATA_PATH, NUM_WORDS, MAX_LEN, BATCH_SIZE,
+    train_gen, val_gen, word_index = get_data(DATA_PATH, NUM_WORDS, MAX_LEN, BATCH_SIZE,
                                               train_test_split=0.8)
 
     matrix_similarity_function = dot_similarity
