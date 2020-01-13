@@ -17,7 +17,7 @@ def gen_interaction_matrix(matrix_similarity_function):
 
 def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
                          matrix_similarity_function, convs_depth, denses_depth, activation,
-                         trainable=False,
+                         trainable=False, lstm_dimension=50,
                          embedding_matrix=None):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
@@ -32,10 +32,10 @@ def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
     left_encoded = embed(left_input)
     right_encoded = embed(right_input)
 
-    bi_left = Bidirectional(LSTM(embedding_dimension, return_sequences=True), merge_mode='concat')(
+    bi_left = Bidirectional(LSTM(lstm_dimension, return_sequences=True), merge_mode='concat')(
         left_encoded)
 
-    bi_right = Bidirectional(LSTM(embedding_dimension, return_sequences=True), merge_mode='concat')(
+    bi_right = Bidirectional(LSTM(lstm_dimension, return_sequences=True), merge_mode='concat')(
         right_encoded)
 
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])

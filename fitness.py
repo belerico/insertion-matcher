@@ -5,7 +5,7 @@ import os
 
 def fit(train_gen, val_gen, num_words, embedding_dim, max_len,
         matrix_similarity_function, exp_dir, early_stopping_after, convs_depth, denses_depth,
-        embedding_matrix=None, activation='sigmoid', verbosity=4):
+        lstm_dimension=50, embedding_matrix=None, activation='sigmoid', verbosity=4):
 
     graph_base_dir = os.path.join(exp_dir, 'graph')
     checkpoint_base_dir = os.path.join(exp_dir, 'checkpoint')
@@ -35,6 +35,7 @@ def fit(train_gen, val_gen, num_words, embedding_dim, max_len,
                                  convs_depth=convs_depth,
                                  denses_depth=denses_depth,
                                  embedding_matrix=embedding_matrix,
+                                 lstm_dimension=lstm_dimension,
                                  activation=activation)
     model.summary()
     model.compile('adam', loss='binary_crossentropy', metrics=['accuracy'])
