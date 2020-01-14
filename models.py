@@ -16,7 +16,8 @@ def gen_interaction_matrix(matrix_similarity_function):
 
 
 def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
-                         matrix_similarity_function, convs_depth, trainable=False,
+                         matrix_similarity_function, convs_depth, denses_depth, activation,
+                         trainable=False, lstm_dimension=50,
                          embedding_matrix=None):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
@@ -31,10 +32,10 @@ def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
     left_encoded = embed(left_input)
     right_encoded = embed(right_input)
 
-    bi_left = Bidirectional(LSTM(embedding_dimension, return_sequences=True), merge_mode='concat')(
+    bi_left = Bidirectional(LSTM(lstm_dimension, return_sequences=True), merge_mode='concat')(
         left_encoded)
 
-    bi_right = Bidirectional(LSTM(embedding_dimension, return_sequences=True), merge_mode='concat')(
+    bi_right = Bidirectional(LSTM(lstm_dimension, return_sequences=True), merge_mode='concat')(
         right_encoded)
 
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
@@ -42,8 +43,12 @@ def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
     for conv_depth in convs_depth:
         x = Conv2D(conv_depth, (3, 3), activation='relu')(x)
         x = MaxPool2D()(x)
+
     x = Flatten()(x)
-    output = Dense(1, activation='sigmoid')(x)
+    for dense_depth in denses_depth:
+        x = Dense(dense_depth, activation='relu')(x)
+
+    output = Dense(1, activation=activation)(x)
 
     model = Model(inputs=[left_input, right_input], outputs=[output])
     return model

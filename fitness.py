@@ -4,8 +4,8 @@ import os
 
 
 def fit(train_gen, val_gen, num_words, embedding_dim, max_len,
-        matrix_similarity_function, exp_dir, early_stopping_after, convs_depth,
-        embedding_matrix=None, verbosity=4):
+        matrix_similarity_function, exp_dir, early_stopping_after, convs_depth, denses_depth,
+        lstm_dimension=50, embedding_matrix=None, activation='sigmoid', verbosity=4):
 
     graph_base_dir = os.path.join(exp_dir, 'graph')
     checkpoint_base_dir = os.path.join(exp_dir, 'checkpoint')
@@ -33,7 +33,10 @@ def fit(train_gen, val_gen, num_words, embedding_dim, max_len,
     callbacks_list = [cb_tb, cb_stop, cb_csv, cb_best]
     model = get_deep_cross_model(num_words + 1, embedding_dim, max_len, matrix_similarity_function,
                                  convs_depth=convs_depth,
-                                 embedding_matrix=embedding_matrix)
+                                 denses_depth=denses_depth,
+                                 embedding_matrix=embedding_matrix,
+                                 lstm_dimension=lstm_dimension,
+                                 activation=activation)
     model.summary()
     model.compile('adam', loss='binary_crossentropy', metrics=['accuracy'])
     print("Start training")
