@@ -5,6 +5,11 @@ from keras.preprocessing.sequence import pad_sequences
 
 from utils import parse_content_line
 
+# TODO: to work with variable length sentences, we need to pad, within the batch, all the 
+# sentences that are shorter than the maximum-length sentence
+# model = Sequential()
+# model.add(Masking(mask_value=0., input_shape=(None, 10)))
+# model.add(LSTM(32))
 
 class Dataset:
     def __init__(self, file_txt, num_words=1000, max_len=20):
