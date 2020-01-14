@@ -37,4 +37,4 @@ if __name__ == '__main__':
     model = fit(train_gen, val_gen, NUM_WORDS, EMBEDDING_DIM, MAX_LEN,
                 matrix_similarity_function, EXP_DIR,
                 EARLY_STOPPING,
-                embedding_matrix=None, convs_depth=CONVS_DEPTH, denses_depth=DENSES_DEPTH)
+                embedding_matrix=embedding_matrix, convs_depth=CONVS_DEPTH, denses_depth=DENSES_DEPTH)

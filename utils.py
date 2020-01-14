@@ -5,9 +5,12 @@ from keras import backend as K
 from keras.backend.tensorflow_backend import tf_math_ops
 
 
-def parse_content_line(x):
+def parse_content_line(x, attributes=['title_left', 'title_right'], label=True):
     item = json.loads(x)
-    item = np.array([item['title_left'], item['title_right'], int(item['label'])])
+    elements = [item[attr] for attr in attributes]
+    if label:
+        elements.append(int(item['label']))
+    item = np.array(elements)
     return item[np.newaxis, :]
 
 
@@ -47,5 +50,6 @@ def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, wor
             embedding_matrix[i] = embedding_vector
 
     return embedding_matrix
+
 
 # TODO: implement all similarity functions from paper
