@@ -17,7 +17,35 @@ def dot_similarity(tensor1, tensor2):
 
     return matrix
 
+def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, word_index):
+    # here we load the pretraiend embedding
+    embeddings_index = {}
+    with open(embedding_file) as f:
+        for line in f:
+            word, coefs = line.split(maxsplit=1) # load embedding representations
+            coefs = np.fromstring(coefs, 'f', sep=' ')
+            embeddings_index[word] = coefs
 
-t
+    print('Found %s word vectors.' % len(embeddings_index))
+
+    # final matrix embedding with Dataset indexes
+    embedding_matrix = np.zeros((num_words, embedding_dimension))
+
+    # word index of Dataset instance (mapping of vocabs and their indexes)
+    for word, i in word_index.items():
+
+        if i >= num_words: # if index i is out of bound, skip it
+            continue
+
+        # get word representation from previous loaded embedding
+        embedding_vector = embeddings_index.get(word)
+
+        # if the word has a representation in embeddings, create the association (i -> embedding)
+        # in final embedding_matrix
+        if embedding_vector is not None:
+            # words not found in embedding index will be all-zeros.
+            embedding_matrix[i] = embedding_vector
+
+    return embedding_matrix
 
 # TODO: implement all similarity functions from paper
