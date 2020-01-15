@@ -33,7 +33,8 @@ def dot_similarity(tensor1, tensor2):
 
     return matrix
 
-def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, word_index, model='w2v'):
+def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, word_index):
+    print('* LOADING EMBEDDINGS MATRIX')
     # here we load the pretraiend embedding
     embeddings_index = {}
     with open(embedding_file) as f:
@@ -42,16 +43,14 @@ def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, wor
             coefs = np.fromstring(coefs, 'f', sep=' ')
             embeddings_index[word] = coefs
 
-    print('Found %s word vectors.' % len(embeddings_index))
+    print('* FOUND %s WORD VECTORS' % len(embeddings_index))
 
     # final matrix embedding with Dataset indexes
-    embedding_matrix = np.zeros((num_words if model == 'glove' else len(embeddings_index), embedding_dimension))
+    embedding_matrix = np.zeros((num_words, embedding_dimension))
 
+    words_found = 0
     # word index of Dataset instance (mapping of vocabs and their indexes)
     for word, i in word_index.items():
-
-        if i >= num_words: # if index i is out of bound, skip it
-            continue
 
         # get word representation from previous loaded embedding
         embedding_vector = embeddings_index.get(word)
@@ -61,6 +60,8 @@ def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, wor
         if embedding_vector is not None:
             # words not found in embedding index will be all-zeros.
             embedding_matrix[i] = embedding_vector
+            words_found += 1
+    print('* FOUND', words_found, 'vector representations out of', num_words, 'words')
 
     return embedding_matrix
 
