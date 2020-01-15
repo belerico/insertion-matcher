@@ -9,6 +9,7 @@ from keras.layers import (
     LSTM,
     Lambda,
     MaxPool2D,
+    Dropout,
 )
 from keras.initializers import Constant
 
@@ -32,9 +33,9 @@ def get_deep_cross_model(
     convs_depth,
     denses_depth,
     activation,
-    lstm_dimension=50,
+    lstm_dimension=100,
     embedding_matrix=None,
-    embedding_trainable=False
+    embedding_trainable=False,
 ):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
@@ -47,7 +48,7 @@ def get_deep_cross_model(
             embedding_dimension,
             weights=[embedding_matrix],
             trainable=embedding_trainable,
-            mask_zero=True
+            mask_zero=True,
         )
 
     left_encoded = embed(left_input)
@@ -64,12 +65,13 @@ def get_deep_cross_model(
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
     for conv_depth in convs_depth:
-        x = Conv2D(conv_depth, (3, 3), activation="relu")(x)
+        x = Conv2D(conv_depth, (2, 2), activation="relu")(x)
         x = MaxPool2D()(x)
 
     x = Flatten()(x)
     for dense_depth in denses_depth:
         x = Dense(dense_depth, activation="relu")(x)
+        x = Dropout(0.5)(x)
 
     output = Dense(1, activation=activation)(x)
 

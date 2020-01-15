@@ -14,15 +14,15 @@ def preprocess(doc: spacy.tokens.Doc, dataset=True):
             and not (token.lower_.strip() == "null" or token.is_stop or token.is_punct)
         ]
     )
-    if dataset or tokens != '':
+    if dataset or tokens != "":
         return tokens
 
 
-def parse_content_line(x, attributes=['title_left', 'title_right'], label=True):
+def parse_content_line(x, attributes=["title_left", "title_right"], label=True):
     item = json.loads(x)
     elements = [item[attr] for attr in attributes]
     if label:
-        elements.append(int(item['label']))
+        elements.append(int(item["label"]))
     item = np.array(elements)
     return item[np.newaxis, :]
 
@@ -33,17 +33,20 @@ def dot_similarity(tensor1, tensor2):
 
     return matrix
 
-def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, word_index):
-    print('* LOADING EMBEDDINGS MATRIX')
+
+def get_pretrained_embedding(
+    embedding_file, num_words, embedding_dimension, word_index
+):
+    print("* LOADING EMBEDDINGS MATRIX")
     # here we load the pretraiend embedding
     embeddings_index = {}
     with open(embedding_file) as f:
         for line in f:
-            word, coefs = line.split(maxsplit=1) # load embedding representations
-            coefs = np.fromstring(coefs, 'f', sep=' ')
+            word, coefs = line.split(maxsplit=1)  # load embedding representations
+            coefs = np.fromstring(coefs, "f", sep=" ")
             embeddings_index[word] = coefs
 
-    print('* FOUND %s WORD VECTORS' % len(embeddings_index))
+    print("* FOUND %s WORD VECTORS" % len(embeddings_index))
 
     # final matrix embedding with Dataset indexes
     embedding_matrix = np.zeros((num_words, embedding_dimension))
@@ -61,7 +64,7 @@ def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, wor
             # words not found in embedding index will be all-zeros.
             embedding_matrix[i] = embedding_vector
             words_found += 1
-    print('* FOUND', words_found, 'vector representations out of', num_words, 'words')
+    print("* FOUND", words_found, "vector representations out of", num_words, "words")
 
     return embedding_matrix
 
