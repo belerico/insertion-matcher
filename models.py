@@ -36,6 +36,7 @@ def get_deep_cross_model(
     lstm_dimension=100,
     embedding_matrix=None,
     embedding_trainable=False,
+    dropout=False,
 ):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
@@ -69,9 +70,10 @@ def get_deep_cross_model(
         x = MaxPool2D()(x)
 
     x = Flatten()(x)
-    for dense_depth in denses_depth:
+    for i, dense_depth in enumerate(denses_depth):
         x = Dense(dense_depth, activation="relu")(x)
-        x = Dropout(0.5)(x)
+        if i < len(denses_depth) - 1 and dropout:
+            x = Dropout(0.5)(x)
 
     output = Dense(1, activation=activation)(x)
 

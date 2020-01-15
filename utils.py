@@ -2,6 +2,7 @@ import json
 import spacy
 import numpy as np
 from keras import backend as K
+from keras.layers import dot
 from keras.backend.tensorflow_backend import tf_math_ops
 
 
@@ -30,7 +31,14 @@ def parse_content_line(x, attributes=["title_left", "title_right"], label=True):
 def dot_similarity(tensor1, tensor2):
     matrix = tf_math_ops.batch_mat_mul(tensor1, tensor2, adj_y=True)
     matrix = K.expand_dims(matrix, axis=-1)
+    return matrix
 
+
+def cosine_similarity(tensor1, tensor2):
+    matrix = tf_math_ops.batch_mat_mul(
+        K.l2_normalize(tensor1, axis=-1), K.l2_normalize(tensor2, axis=-1), adj_y=True
+    )
+    matrix = K.expand_dims(matrix, axis=-1)
     return matrix
 
 
