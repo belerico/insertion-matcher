@@ -10,6 +10,7 @@ import multiprocessing
 from gensim.models import Word2Vec, FastText
 from pandas import pandas as pd
 
+from utils import preprocess
 from utils import parse_content_line
 
 import logging  # Setting up the loggings to monitor gensim
@@ -19,20 +20,6 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     level=logging.INFO,
 )
-
-
-def preprocess(doc):
-    tokens = " ".join(
-        [
-            token.lower_.strip()
-            for token in doc
-            if token
-            and not (token.lower_.strip() == "null" or token.is_stop or token.is_punct)
-        ]
-    )
-    if tokens != "":
-        return tokens
-
 
 parser = argparse.ArgumentParser(description="Train Word2Vec model")
 parser.add_argument("--dataset-path", type=str, help="path to dataset")
