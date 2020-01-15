@@ -72,10 +72,16 @@ class Dataset:
         tokenizer = Tokenizer(num_words=num_words)
         tokenizer.word_index = self.word_index
         self.dataset[:, 0, :] = pad_sequences(
-            tokenizer.texts_to_sequences(contents[:, 0]), max_len
+            tokenizer.texts_to_sequences(contents[:, 0]),
+            max_len,
+            padding="post",
+            truncating="post",
         )
         self.dataset[:, 1, :] = pad_sequences(
-            tokenizer.texts_to_sequences(contents[:, 1]), max_len
+            tokenizer.texts_to_sequences(contents[:, 1]),
+            max_len,
+            padding="post",
+            truncating="post",
         )
         del tokenizer
 
