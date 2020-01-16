@@ -1,20 +1,36 @@
+import re
 import json
 import spacy
 import numpy as np
+import string
+from nltk import word_tokenize
+from nltk.corpus import stopwords
 from keras import backend as K
 from keras.layers import dot
 from keras.backend.tensorflow_backend import tf_math_ops
 
+english_stopwords = set(stopwords.words("english"))
+non_alphanum_regex = re.compile(r'\W+')
 
-def preprocess(doc: spacy.tokens.Doc, dataset=True):
-    tokens = " ".join(
-        [
-            token.lower_.strip()
-            for token in doc
-            if token
-               and not (token.lower_.strip() == "null" or token.is_stop or token.is_punct)
-        ]
-    )
+def preprocess(doc, method='nltk', dataset=True):
+    if method == 'spacy':
+        tokens = " ".join(
+            [
+                token.lower_
+                for token in doc
+                if token
+                and not (token.lower_ == "null" or token.is_stop or token.is_punct)
+            ]
+        )
+    elif method == 'nltk':
+        # doc = non_alphanum_regex.sub(' ', doc).lower()
+        tokens = " ".join(
+            [
+                token
+                for token in word_tokenize(doc.lower())
+                if not (token == "null" or token in english_stopwords or token in string.punctuation)
+            ]
+        )
     if dataset or tokens != "":
         return tokens
 
@@ -23,7 +39,7 @@ def parse_content_line(x, attributes=None, label=True):
     if attributes is None:
         attributes = ["title_left", "title_right"]
     item = json.loads(x)
-    elements = [item[attr] for attr in attributes]
+    elements = [item[attr] if item[attr] is not None else '' for attr in attributes]
     if label:
         elements.append(int(item["label"]))
     item = np.array(elements)

@@ -1,6 +1,8 @@
 import spacy
 import numpy as np
 import itertools
+import multiprocessing as mp
+
 from pandas import pandas
 from collections import Counter
 from keras.preprocessing.text import Tokenizer
@@ -24,6 +26,7 @@ class Dataset:
         data_path,
         attributes=None,
         preprocess_data=True,
+        preprocess_method="nltk",  # or spacy
         num_words=None,
         max_len=20,
     ):
@@ -38,27 +41,23 @@ class Dataset:
             except:
                 print("Lost data at line {}".format(i))
 
-        contents = np.concatenate(contents, axis=0)
+        contents = np.concatenate(contents, axis=0).astype(object)
         if preprocess_data:
             print("* PREPROCESS DATA")
-            nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
-            contents_df = pandas.DataFrame(
-                data=contents, columns=attributes + ["label"]
-            )
-            contents_df[attributes] = contents_df[attributes].fillna("")
-            for attr in range(len(attributes)):
-                contents_df.loc[:, attributes[attr]] = pandas.Series(
-                    [
-                        preprocess(doc)
+            if preprocess_method == "spacy":
+                nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
+                for attr in range(len(attributes)):
+                    contents[:, attr] = [
+                        preprocess(doc, method="spacy")
                         for doc in nlp.pipe(
-                            contents_df.loc[:, attributes[attr]].values.tolist(),
-                            batch_size=5000,
-                            n_threads=4,
+                            contents[:, attr], batch_size=5000, n_threads=4,
                         )
                     ]
-                )
-                contents[:, attr] = contents_df.loc[:, attributes[attr]].to_numpy()
-            del contents_df
+                # del contents_df
+            elif preprocess_method == "nltk":
+                with mp.Pool(processes=4) as pool:
+                    for attr in range(len(attributes)):
+                        contents[:, attr] = pool.map(preprocess, contents[:, attr])
             print("* DONE")
 
         self.dataset = np.zeros([len(contents), 2, max_len])
@@ -149,8 +148,22 @@ def get_train_test_indexes(max_index, train_test_split):
     return indexes[:train_split], indexes[train_split:]
 
 
-def get_data(data_path, num_words, max_len, batch_size, train_test_split=0.8):
-    dataset = Dataset(data_path, num_words=num_words, max_len=max_len)
+def get_data(
+    data_path,
+    num_words,
+    max_len,
+    batch_size,
+    preprocess_data=True,
+    preprocess_method="spacy",
+    train_test_split=0.8,
+):
+    dataset = Dataset(
+        data_path,
+        num_words=num_words,
+        max_len=max_len,
+        preprocess_data=preprocess_data,
+        preprocess_method=preprocess_method,
+    )
     train_indexes, test_indexes = get_train_test_indexes(len(dataset), train_test_split)
     train_gen = Dataloader(dataset, batch_size, train_indexes)
     val_gen = Dataloader(dataset, batch_size, test_indexes)

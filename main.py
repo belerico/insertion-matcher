@@ -8,14 +8,14 @@ parser.add_argument(
     "--dataset-path",
     type=str,
     help="path to dataset",
-    default="./dataset/all_train_small.json",
+    default="./dataset/computers/train/computers_splitted_train_medium.json",
 )
 parser.add_argument("--exp-path", type=str, help="path to exp", default="./experiments")
 parser.add_argument(
     "--pretrained-embeddings-path",
     type=str,
     help="path to pretrained embedding",
-    default="./data/w2v_title_brand_description_1MinCount_5ContextWindow_100d.txt",
+    default="./dataset/embeddings/w2v/w2v_title_brand_description_1MinCount_5ContextWindow_100d.txt",
 )
 
 args = parser.parse_args()
@@ -29,12 +29,17 @@ BATCH_SIZE = 32
 EMBEDDING_DIM = 100
 EARLY_STOPPING = 10
 CONVS_DEPTH = [16]
-DENSES_DEPTH = [32]
+DENSES_DEPTH = [32, 16]
 
 if __name__ == "__main__":
     print("* LOADING DATA")
     train_gen, val_gen, word_index = get_data(
-        DATA_PATH, NUM_WORDS, MAX_LEN, BATCH_SIZE, train_test_split=0.8
+        DATA_PATH,
+        NUM_WORDS,
+        MAX_LEN,
+        BATCH_SIZE,
+        train_test_split=0.8,
+        preprocess_method="nltk",
     )
     NUM_WORDS = len(word_index) if NUM_WORDS is None else NUM_WORDS
     print("* NUM WORDS: ", NUM_WORDS)
@@ -60,5 +65,5 @@ if __name__ == "__main__":
         convs_depth=CONVS_DEPTH,
         denses_depth=DENSES_DEPTH,
         dropout=True,
-        activation='tanh'
+        activation="tanh",
     )
