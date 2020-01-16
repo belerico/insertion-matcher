@@ -11,7 +11,7 @@ def preprocess(doc: spacy.tokens.Doc, dataset=True):
             token.lower_.strip()
             for token in doc
             if token
-            and not (token.lower_.strip() == "null" or token.is_stop or token.is_punct)
+               and not (token.lower_.strip() == "null" or token.is_stop or token.is_punct)
         ]
     )
     if dataset or tokens != '':
@@ -33,24 +33,33 @@ def dot_similarity(tensor1, tensor2):
 
     return matrix
 
-def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, word_index, model='w2v'):
+
+def cosine_distance(tensor1, tensor2):
+    x = K.l2_normalize(tensor1, axis=-1)
+    y = K.l2_normalize(tensor2, axis=-1)
+    return -K.mean(x * y, axis=-1, keepdims=True)
+
+
+def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, word_index,
+                             model='w2v'):
     # here we load the pretraiend embedding
     embeddings_index = {}
     with open(embedding_file) as f:
         for line in f:
-            word, coefs = line.split(maxsplit=1) # load embedding representations
+            word, coefs = line.split(maxsplit=1)  # load embedding representations
             coefs = np.fromstring(coefs, 'f', sep=' ')
             embeddings_index[word] = coefs
 
     print('Found %s word vectors.' % len(embeddings_index))
 
     # final matrix embedding with Dataset indexes
-    embedding_matrix = np.zeros((num_words if model == 'glove' else len(embeddings_index), embedding_dimension))
+    embedding_matrix = np.zeros(
+        (num_words if model == 'glove' else len(embeddings_index), embedding_dimension))
 
     # word index of Dataset instance (mapping of vocabs and their indexes)
     for word, i in word_index.items():
 
-        if i >= num_words: # if index i is out of bound, skip it
+        if i >= num_words:  # if index i is out of bound, skip it
             continue
 
         # get word representation from previous loaded embedding
@@ -63,6 +72,5 @@ def get_pretrained_embedding(embedding_file, num_words, embedding_dimension, wor
             embedding_matrix[i] = embedding_vector
 
     return embedding_matrix
-
 
 # TODO: implement all similarity functions from paper
