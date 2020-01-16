@@ -6,7 +6,7 @@ import spacy
 import gensim
 import argparse
 import itertools
-import multiprocessing
+import multiprocessing as mp
 from gensim.models import Word2Vec, FastText
 from pandas import pandas as pd
 
@@ -22,32 +22,53 @@ logging.basicConfig(
 )
 
 parser = argparse.ArgumentParser(description="Train Word2Vec model")
-parser.add_argument("--dataset-path", type=str, help="path to dataset")
 parser.add_argument(
-    "--algorithm", type=str, help="training algorithm: CBOW or SKIPGRAM"
+    "--dataset-path",
+    type=str,
+    help="path to dataset",
+    default="./dataset/computers/train/computers_splitted_train_medium.json",
+)
+parser.add_argument(
+    "--preprocess-method", type=str, help="nltk or spacy preprocess", default="nltk",
+)
+parser.add_argument(
+    "--embed-algorithm",
+    type=int,
+    help="training algorithm: CBOW (0) or SKIPGRAM (1)",
+    default=1,
 )
 args = parser.parse_args()
-
-# Load spacy for tokenizing text
-nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
+preprocess_method = args.preprocess_method
 
 attrs = ["title", "brand", "description"]
 attributes = [attr + "_left" for attr in attrs] + [attr + "_right" for attr in attrs]
+print("* LOADING DATASET")
 dataset = np.concatenate(
     [
         parse_content_line(x, attributes=attributes, label=0)
-        for x in open("./dataset/all_train_small.json", "r").readlines()
+        for x in open(args.dataset_path, "r").readlines()
     ],
     axis=0,
 )
-dataset = pd.DataFrame(data=dataset, columns=attributes)
+print("* DONE")
 
-# Replace None value with empty string
-dataset[attributes] = dataset[attributes].fillna("")
-sentences = list(itertools.chain(*dataset[attributes].values.tolist()))
+sentences = list(itertools.chain(*dataset))
 
+cores = mp.cpu_count() - 4  # Count the number of cores in a computer
+print("* PREPROCESS")
 # Preprocess text
-txt = [preprocess(doc) for doc in nlp.pipe(sentences, batch_size=5000, n_threads=4)]
+if preprocess_method == "spacy":
+    # Load spacy for tokenizing text
+    nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
+    txt = [
+        preprocess(doc, method=preprocess_method)
+        for doc in nlp.pipe(sentences, batch_size=5000, n_threads=cores)
+    ]
+elif preprocess_method == "nltk":
+    with mp.Pool(processes=cores) as pool:
+        for attr in range(len(attributes)):
+            txt = pool.map(preprocess, sentences)
+print("* DONE")
 
 # Remove duplicates
 cleaned_sentences = pd.DataFrame({"sentences": txt})
@@ -57,13 +78,12 @@ cleaned_sentences = cleaned_sentences.dropna().drop_duplicates()
 sentences = [row.split() for row in cleaned_sentences["sentences"]]
 
 # Train W2V or FastText
-# Train W2V or FastText
+print("* TRAIN EMBEDDINGS")
 size = 150
-cores = multiprocessing.cpu_count()  # Count the number of cores in a computer
 algorithm = "fasttext"
 if algorithm == "w2v":
     model = Word2Vec(
-        sg=1,  #  Use SKIPGRAM model
+        sg=args.embed_algorithm,  #  Use SKIPGRAM model
         hs=0,  # Don't use hierarchical softmax
         min_count=9,  # All words that have an absolute frequency < 20 will be discarded
         window=7,  # Context-window size
@@ -76,7 +96,7 @@ if algorithm == "w2v":
     )
 elif algorithm == "fasttext":
     model = FastText(
-        sg=1,  #  Use SKIPGRAM model
+        sg=args.embed_algorithm,  #  Use SKIPGRAM model
         hs=0,  # Don't use hierarchical softmax
         min_count=5,  # All words that have an absolute frequency < 20 will be discarded
         window=9,  # Context-window size
@@ -93,6 +113,7 @@ elif algorithm == "fasttext":
 
 model.build_vocab(sentences, progress_per=10000)
 model.train(sentences, total_examples=model.corpus_count, epochs=30, report_delay=1)
+print("* DONE")
 
 if algorithm == "w2v":
     sentences_dict = {}
