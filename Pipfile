@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
+black = "*"
 
 [packages]
 numpy = "*"
@@ -12,6 +13,11 @@ gensim = "*"
 pandas = "*"
 spacy = "*"
 keras = "*"
+tensorflow = "*"
+nltk = "*"
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
