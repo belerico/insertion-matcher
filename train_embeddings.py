@@ -29,7 +29,7 @@ parser.add_argument(
     default="./dataset/computers/train/computers_splitted_train_medium.json",
 )
 parser.add_argument(
-    "--preprocess-method", type=str, help="nltk or spacy preprocess", default="nltk",
+    "--preprocess-method", type=str, help="nltk or spacy preprocess", default="spacy",
 )
 parser.add_argument(
     "--embed-algorithm",
@@ -49,9 +49,8 @@ dataset = np.concatenate(
         for x in open(args.dataset_path, "r").readlines()
     ],
     axis=0,
-)
+).astype(object)
 print("* DONE")
-
 sentences = list(itertools.chain(*dataset))
 
 cores = mp.cpu_count() - 4  # Count the number of cores in a computer
