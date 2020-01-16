@@ -20,12 +20,12 @@ from utils import parse_content_line
 
 class Dataset:
     def __init__(
-            self,
-            data_path,
-            attributes=None,
-            preprocess_data=True,
-            num_words=None,
-            max_len=20,
+        self,
+        data_path,
+        attributes=None,
+        preprocess_data=True,
+        num_words=None,
+        max_len=20,
     ):
         if attributes is None:
             attributes = ["title_left", "title_right"]
@@ -51,10 +51,10 @@ class Dataset:
                     [
                         preprocess(doc)
                         for doc in nlp.pipe(
-                        contents_df.loc[:, attributes[attr]].values.tolist(),
-                        batch_size=5000,
-                        n_threads=4,
-                    )
+                            contents_df.loc[:, attributes[attr]].values.tolist(),
+                            batch_size=5000,
+                            n_threads=4,
+                        )
                     ]
                 )
                 contents[:, attr] = contents_df.loc[:, attributes[attr]].to_numpy()
@@ -69,8 +69,9 @@ class Dataset:
             itertools.chain(*list(map(str.split, cleaned_sentences)))
         )
         # List of all unique words, sorted by frequency
+        self.word_freqs = Counter(cleaned_sentences)
         self.word_index = {
-            word: (idx + 1) for idx, word in enumerate(Counter(cleaned_sentences))
+            word: (idx + 1) for idx, word in enumerate(list(self.word_freqs.keys()))
         }
         print("* FOUND", len(self.word_index), "unique vocabs")
         del cleaned_sentences
@@ -103,10 +104,13 @@ class Dataset:
 
 
 class Dataloader(Sequence):
-    def __init__(self, dataset, batch_size=32, indexes: np.ndarray = None):
+    def __init__(
+        self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=True
+    ):
         self.dataset = dataset
         self.indexes = indexes if indexes is not None else np.arange(len(self.dataset))
         self.batch_size = batch_size
+        self.shuffle = shuffle
 
     def __getitem__(self, key):
         ids = key
@@ -131,7 +135,8 @@ class Dataloader(Sequence):
         return [first_titles, second_titles], labels
 
     def on_epoch_end(self):
-        np.random.shuffle(self.indexes)
+        if self.shuffle:
+            np.random.shuffle(self.indexes)
 
     def __len__(self):
         return len(self.indexes) // self.batch_size
@@ -159,7 +164,7 @@ def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):
     np.random.shuffle(indexes)
     for i in range(n_folds):
         fold_dim = int(n_samples / n_folds)
-        test_indexes = indexes[fold_dim * i: fold_dim * (i + 1)]
+        test_indexes = indexes[fold_dim * i : fold_dim * (i + 1)]
         train_indexes = np.setdiff1d(indexes, test_indexes)
         train_gen = Dataloader(dataset, batch_size, train_indexes)
         val_gen = Dataloader(dataset, batch_size, test_indexes)
