@@ -27,12 +27,12 @@ train_test_split = int(len(lines) * split)
 
 train_indexes = indexes[:train_test_split]
 test_indexes = indexes[train_test_split:]
-with open("data/train.json", "w") as train_dataset:
+with open("dataset/train.json", "w") as train_dataset:
     for i in train_indexes:
         line = lines[i]
         train_dataset.write(line + '\n')
 
-with open("data/test.json", "w") as test_dataset:
+with open("dataset/test.json", "w") as test_dataset:
     for i in test_indexes:
         line = lines[i]
         test_dataset.write(line + '\n')
