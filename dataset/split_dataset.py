@@ -11,7 +11,7 @@ parser.add_argument(
 parser.add_argument(
     "--split",
     type=float,
-    help="split percentegae",
+    help="split percentage",
     default=.8
 )
 
@@ -30,9 +30,9 @@ test_indexes = indexes[train_test_split:]
 with open("data/train.json", "w") as train_dataset:
     for i in train_indexes:
         line = lines[i]
-        train_dataset.write(line)
+        train_dataset.write(line + '\n')
 
 with open("data/test.json", "w") as test_dataset:
     for i in test_indexes:
         line = lines[i]
-        test_dataset.write(line)
+        test_dataset.write(line + '\n')
