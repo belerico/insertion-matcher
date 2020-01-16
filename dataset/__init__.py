@@ -6,6 +6,7 @@ import multiprocessing as mp
 
 from pandas import pandas
 from collections import Counter
+from sklearn.utils import class_weight
 from keras.preprocessing.text import Tokenizer
 from keras.utils import Sequence
 from keras.preprocessing.sequence import pad_sequences
@@ -166,17 +167,14 @@ def get_wdc_data(
     preprocess_data=True,
     preprocess_method="nltk",
 ):
-    train_gen = Dataloader(
-        Dataset(
-            train_path,
-            num_words=num_words,
-            max_len=max_len,
-            preprocess_data=preprocess_data,
-            preprocess_method=preprocess_method,
-        ),
-        batch_size,
-        None,
+    train = Dataset(
+        train_path,
+        num_words=num_words,
+        max_len=max_len,
+        preprocess_data=preprocess_data,
+        preprocess_method=preprocess_method,
     )
+    train_gen = Dataloader(train, batch_size, None)
     valid_gen = Dataloader(
         Dataset(
             valid_path,
@@ -199,7 +197,10 @@ def get_wdc_data(
         batch_size,
         None,
     )
-    return train_gen, valid_gen, test_gen
+    class_weights = class_weight.compute_class_weight(
+        "balanced", np.unique(train.labels), train.labels
+    )
+    return train_gen, valid_gen, test_gen, class_weights
 
 
 def get_data(

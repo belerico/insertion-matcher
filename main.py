@@ -41,7 +41,7 @@ BATCH_SIZE = 32
 EMBEDDING_DIM = 100
 EARLY_STOPPING = 10
 CONVS_DEPTH = [16]
-DENSES_DEPTH = [32, 16]
+DENSES_DEPTH = [256, 64, 32, 16]
 wdc = True
 
 if __name__ == "__main__":
@@ -55,8 +55,9 @@ if __name__ == "__main__":
             train_test_split=0.8,
             preprocess_method="nltk",
         )
+        class_weights = None
     else:
-        train_gen, val_gen, test_gen = get_wdc_data(
+        train_gen, val_gen, test_gen, class_weights = get_wdc_data(
             args.train_path,
             args.valid_path,
             args.test_path,
@@ -71,6 +72,7 @@ if __name__ == "__main__":
 
     NUM_WORDS = len(word_index) if NUM_WORDS is None else NUM_WORDS
     print("* NUM WORDS: ", NUM_WORDS)
+    print('* CLASS WEIGHTS:', class_weights)
 
     embedding_matrix = None
     if PRETRAINED_EMBEDDING_PATH is not None:
@@ -88,9 +90,10 @@ if __name__ == "__main__":
         EXP_DIR,
         EARLY_STOPPING,
         embedding_matrix=embedding_matrix,
-        embedding_trainable=True,
+        embedding_trainable=False,
         convs_depth=CONVS_DEPTH,
         denses_depth=DENSES_DEPTH,
         dropout=True,
         activation="tanh",
+        class_weights=class_weights
     )
