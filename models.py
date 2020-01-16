@@ -1,6 +1,16 @@
 from keras.models import Model
-from keras.layers import Input, Embedding, Conv2D, Flatten, Dense, Bidirectional, LSTM, Lambda, \
-    MaxPool2D
+from keras.layers import (
+    Input,
+    Embedding,
+    Conv2D,
+    Flatten,
+    Dense,
+    Bidirectional,
+    LSTM,
+    Lambda,
+    MaxPool2D,
+    Dropout,
+)
 from keras.initializers import Constant
 
 
@@ -15,38 +25,55 @@ def gen_interaction_matrix(matrix_similarity_function):
     return Lambda(fun)
 
 
-def get_deep_cross_model(vocab_size, embedding_dimension, vec_dimension,
-                         matrix_similarity_function, convs_depth, denses_depth, activation,
-                         trainable=False, lstm_dimension=50,
-                         embedding_matrix=None):
+def get_deep_cross_model(
+    vocab_size,
+    embedding_dimension,
+    vec_dimension,
+    matrix_similarity_function,
+    convs_depth,
+    denses_depth,
+    activation,
+    lstm_dimension=100,
+    embedding_matrix=None,
+    embedding_trainable=False,
+    dropout=False,
+):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
 
     if embedding_matrix is None:
         embed = Embedding(vocab_size, embedding_dimension)
     else:
-        embed = Embedding(vocab_size, embedding_dimension,
-                          embeddings_initializer=Constant(embedding_matrix),
-                          trainable=trainable)
+        embed = Embedding(
+            vocab_size,
+            embedding_dimension,
+            weights=[embedding_matrix],
+            trainable=embedding_trainable,
+            mask_zero=True,
+        )
 
     left_encoded = embed(left_input)
     right_encoded = embed(right_input)
 
-    bi_left = Bidirectional(LSTM(lstm_dimension, return_sequences=True), merge_mode='concat')(
-        left_encoded)
+    bi_left = Bidirectional(
+        LSTM(lstm_dimension, return_sequences=True), merge_mode="concat"
+    )(left_encoded)
 
-    bi_right = Bidirectional(LSTM(lstm_dimension, return_sequences=True), merge_mode='concat')(
-        right_encoded)
+    bi_right = Bidirectional(
+        LSTM(lstm_dimension, return_sequences=True), merge_mode="concat"
+    )(right_encoded)
 
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
     for conv_depth in convs_depth:
-        x = Conv2D(conv_depth, (3, 3), activation='relu')(x)
+        x = Conv2D(conv_depth, (2, 2), activation="relu")(x)
         x = MaxPool2D()(x)
 
     x = Flatten()(x)
-    for dense_depth in denses_depth:
-        x = Dense(dense_depth, activation='relu')(x)
+    for i, dense_depth in enumerate(denses_depth):
+        x = Dense(dense_depth, activation="relu")(x)
+        if i < len(denses_depth) - 1 and dropout:
+            x = Dropout(0.5)(x)
 
     output = Dense(1, activation=activation)(x)
 

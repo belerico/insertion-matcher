@@ -23,9 +23,7 @@ class Dataset:
         data_path,
         attributes=["title_left", "title_right"],
         preprocess_data=True,
-        embeddings_path=None,
         num_words=None,
-        model=None,
         max_len=20,
     ):
         contents = np.concatenate(
@@ -68,16 +66,22 @@ class Dataset:
         self.word_index = {
             word: (idx + 1) for idx, word in enumerate(Counter(cleaned_sentences))
         }
-        print("* FOUND ", len(self.word_index), " unique vocabs")
+        print("* FOUND", len(self.word_index), "unique vocabs")
         del cleaned_sentences
 
         tokenizer = Tokenizer(num_words=num_words)
         tokenizer.word_index = self.word_index
         self.dataset[:, 0, :] = pad_sequences(
-            tokenizer.texts_to_sequences(contents[:, 0]), max_len
+            tokenizer.texts_to_sequences(contents[:, 0]),
+            max_len,
+            padding="post",
+            truncating="post",
         )
         self.dataset[:, 1, :] = pad_sequences(
-            tokenizer.texts_to_sequences(contents[:, 1]), max_len
+            tokenizer.texts_to_sequences(contents[:, 1]),
+            max_len,
+            padding="post",
+            truncating="post",
         )
         del tokenizer
 

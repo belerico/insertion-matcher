@@ -1,6 +1,6 @@
 from dataset import get_data
 import argparse
-from utils import dot_similarity, get_pretrained_embedding
+from utils import dot_similarity, get_pretrained_embedding, cosine_similarity
 from fitness import fit
 
 parser = argparse.ArgumentParser(description="Train model")
@@ -15,7 +15,7 @@ parser.add_argument(
     "--pretrained-embeddings-path",
     type=str,
     help="path to pretrained embedding",
-    default=None,
+    default="./dataset/fasttext_title_brand_description_1MinCount_5ContextWindow_100d.txt",
 )
 
 args = parser.parse_args()
@@ -26,9 +26,9 @@ PRETRAINED_EMBEDDING_PATH = args.pretrained_embeddings_path
 NUM_WORDS = None
 MAX_LEN = 20
 BATCH_SIZE = 32
-EMBEDDING_DIM = 150
+EMBEDDING_DIM = 100
 EARLY_STOPPING = 10
-CONVS_DEPTH = [8, 16]
+CONVS_DEPTH = [16]
 DENSES_DEPTH = [32]
 
 if __name__ == "__main__":
@@ -36,17 +36,14 @@ if __name__ == "__main__":
     train_gen, val_gen, word_index = get_data(
         DATA_PATH, NUM_WORDS, MAX_LEN, BATCH_SIZE, train_test_split=0.8
     )
-
-    matrix_similarity_function = dot_similarity
+    NUM_WORDS = len(word_index) if NUM_WORDS is None else NUM_WORDS
+    print("* NUM WORDS: ", NUM_WORDS)
+    matrix_similarity_function = cosine_similarity
     embedding_matrix = None
 
     if PRETRAINED_EMBEDDING_PATH is not None:
         embedding_matrix = get_pretrained_embedding(
-            PRETRAINED_EMBEDDING_PATH,
-            NUM_WORDS + 1,
-            EMBEDDING_DIM,
-            word_index,
-            model="glove",
+            PRETRAINED_EMBEDDING_PATH, NUM_WORDS + 1, EMBEDDING_DIM, word_index
         )
 
     model = fit(
@@ -59,6 +56,9 @@ if __name__ == "__main__":
         EXP_DIR,
         EARLY_STOPPING,
         embedding_matrix=embedding_matrix,
+        embedding_trainable=True,
         convs_depth=CONVS_DEPTH,
         denses_depth=DENSES_DEPTH,
+        dropout=True,
+        activation='tanh'
     )

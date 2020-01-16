@@ -16,6 +16,8 @@ def fit(
     denses_depth,
     lstm_dimension=50,
     embedding_matrix=None,
+    embedding_trainable=False,
+    dropout=False,
     activation="sigmoid",
     verbosity=4,
 ):
@@ -57,11 +59,13 @@ def fit(
         convs_depth=convs_depth,
         denses_depth=denses_depth,
         embedding_matrix=embedding_matrix,
+        embedding_trainable=embedding_trainable,
+        dropout=dropout,
         lstm_dimension=lstm_dimension,
         activation=activation,
     )
     model.summary()
     model.compile("adam", loss="binary_crossentropy", metrics=["accuracy"])
-    print("Start training")
-    model.fit(train_gen, validation_data=val_gen, epochs=10)
+    print("* TRAINING")
+    model.fit(train_gen, validation_data=val_gen, epochs=20)
     return model
