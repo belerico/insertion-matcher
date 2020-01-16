@@ -71,5 +71,5 @@ def fit(
     model.compile("adam", loss="binary_crossentropy", metrics=["accuracy"])
     print("* TRAINING")
     model.fit(train_gen, validation_data=val_gen, epochs=epochs,
-              callbacks=callbacks_list, verbosity=verbosity)
+              callbacks=callbacks_list, verbose=verbosity)
     return model
