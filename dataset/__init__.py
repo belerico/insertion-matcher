@@ -187,7 +187,6 @@ def get_wdc_data(
         ),
         batch_size,
         None,
-        shuffle=False,
     )
     test_gen = Dataloader(
         Dataset(
@@ -199,7 +198,6 @@ def get_wdc_data(
         ),
         batch_size,
         None,
-        shuffle=False,
     )
     return train_gen, valid_gen, test_gen
 
