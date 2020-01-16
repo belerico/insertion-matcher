@@ -10,6 +10,7 @@ from keras.preprocessing.sequence import pad_sequences
 from utils import preprocess
 from utils import parse_content_line
 
+
 # TODO: to work with variable length sentences, we need to pad, within the batch, all the
 # sentences that are shorter than the maximum-length sentence
 # model = Sequential()
@@ -19,20 +20,25 @@ from utils import parse_content_line
 
 class Dataset:
     def __init__(
-        self,
-        data_path,
-        attributes=["title_left", "title_right"],
-        preprocess_data=True,
-        num_words=None,
-        max_len=20,
+            self,
+            data_path,
+            attributes=None,
+            preprocess_data=True,
+            num_words=None,
+            max_len=20,
     ):
-        contents = np.concatenate(
-            [
-                parse_content_line(x, attributes=attributes, label=1)
-                for x in open(data_path, "r").readlines()
-            ],
-            axis=0,
-        )
+        if attributes is None:
+            attributes = ["title_left", "title_right"]
+
+        contents = []
+        for i, x in enumerate(open(data_path, "r").readlines()):
+            try:
+                item = parse_content_line(x, attributes=attributes, label=1)
+                contents.append(item)
+            except:
+                print("Lost data at line {}".format(i))
+
+        contents = np.concatenate(contents, axis=0)
         if preprocess_data:
             print("* PREPROCESS DATA")
             nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
@@ -45,10 +51,10 @@ class Dataset:
                     [
                         preprocess(doc)
                         for doc in nlp.pipe(
-                            contents_df.loc[:, attributes[attr]].values.tolist(),
-                            batch_size=5000,
-                            n_threads=4,
-                        )
+                        contents_df.loc[:, attributes[attr]].values.tolist(),
+                        batch_size=5000,
+                        n_threads=4,
+                    )
                     ]
                 )
                 contents[:, attr] = contents_df.loc[:, attributes[attr]].to_numpy()
@@ -153,7 +159,7 @@ def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):
     np.random.shuffle(indexes)
     for i in range(n_folds):
         fold_dim = int(n_samples / n_folds)
-        test_indexes = indexes[fold_dim * i : fold_dim * (i + 1)]
+        test_indexes = indexes[fold_dim * i: fold_dim * (i + 1)]
         train_indexes = np.setdiff1d(indexes, test_indexes)
         train_gen = Dataloader(dataset, batch_size, train_indexes)
         val_gen = Dataloader(dataset, batch_size, test_indexes)

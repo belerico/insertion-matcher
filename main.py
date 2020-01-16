@@ -15,7 +15,7 @@ parser.add_argument(
     "--pretrained-embeddings-path",
     type=str,
     help="path to pretrained embedding",
-    default="./dataset/fasttext_title_brand_description_1MinCount_5ContextWindow_100d.txt",
+    default="./data/w2v_title_brand_description_1MinCount_5ContextWindow_100d.txt",
 )
 
 args = parser.parse_args()

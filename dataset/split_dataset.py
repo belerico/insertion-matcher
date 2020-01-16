@@ -11,7 +11,7 @@ parser.add_argument(
 parser.add_argument(
     "--split",
     type=float,
-    help="split percentegae",
+    help="split percentage",
     default=.8
 )
 
@@ -27,6 +27,7 @@ train_test_split = int(len(lines) * split)
 
 train_indexes = indexes[:train_test_split]
 test_indexes = indexes[train_test_split:]
+
 with open("data/train.json", "w") as train_dataset:
     for i in train_indexes:
         line = lines[i]

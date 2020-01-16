@@ -12,14 +12,16 @@ def preprocess(doc: spacy.tokens.Doc, dataset=True):
             token.lower_.strip()
             for token in doc
             if token
-            and not (token.lower_.strip() == "null" or token.is_stop or token.is_punct)
+               and not (token.lower_.strip() == "null" or token.is_stop or token.is_punct)
         ]
     )
     if dataset or tokens != "":
         return tokens
 
 
-def parse_content_line(x, attributes=["title_left", "title_right"], label=True):
+def parse_content_line(x, attributes=None, label=True):
+    if attributes is None:
+        attributes = ["title_left", "title_right"]
     item = json.loads(x)
     elements = [item[attr] for attr in attributes]
     if label:
@@ -43,7 +45,7 @@ def cosine_similarity(tensor1, tensor2):
 
 
 def get_pretrained_embedding(
-    embedding_file, num_words, embedding_dimension, word_index
+        embedding_file, num_words, embedding_dimension, word_index
 ):
     print("* LOADING EMBEDDINGS MATRIX")
     # here we load the pretraiend embedding
@@ -75,6 +77,5 @@ def get_pretrained_embedding(
     print("* FOUND", words_found, "vector representations out of", num_words, "words")
 
     return embedding_matrix
-
 
 # TODO: implement all similarity functions from paper
