@@ -1,3 +1,4 @@
+import json
 import spacy
 import numpy as np
 import itertools
@@ -24,6 +25,7 @@ class Dataset:
     def __init__(
         self,
         data_path,
+        word_index_path=None,
         attributes=None,
         preprocess_data=True,
         preprocess_method="nltk",  # or spacy
@@ -60,21 +62,26 @@ class Dataset:
                         contents[:, attr] = pool.map(preprocess, contents[:, attr])
             print("* DONE")
 
+        if word_index_path is None:
+            cleaned_sentences = list(itertools.chain(*contents[:, : len(attributes)]))
+            # Create a word index on our own
+            cleaned_sentences = list(
+                itertools.chain(*list(map(str.split, cleaned_sentences)))
+            )
+            # List of all unique words, sorted by frequency
+            self.word_index = {
+                word: (idx + 1)
+                for idx, word in enumerate(list(Counter(cleaned_sentences).keys()))
+            }
+            print("* FOUND", len(self.word_index), "unique vocabs")
+            del cleaned_sentences
+        else:
+            self.word_index = json.load(open(word_index_path).read())
+
         self.dataset = np.zeros([len(contents), 2, max_len])
         self.labels = contents[:, len(attributes)]
-        cleaned_sentences = list(itertools.chain(*contents[:, : len(attributes)]))
-        # Create a word index on our own
-        cleaned_sentences = list(
-            itertools.chain(*list(map(str.split, cleaned_sentences)))
-        )
-        # List of all unique words, sorted by frequency
-        self.word_freqs = Counter(cleaned_sentences)
-        self.word_index = {
-            word: (idx + 1) for idx, word in enumerate(list(self.word_freqs.keys()))
-        }
-        print("* FOUND", len(self.word_index), "unique vocabs")
-        del cleaned_sentences
 
+        # Tokenize sentences (words -> indices)
         tokenizer = Tokenizer(num_words=num_words)
         tokenizer.word_index = self.word_index
         self.dataset[:, 0, :] = pad_sequences(
@@ -148,13 +155,63 @@ def get_train_test_indexes(max_index, train_test_split):
     return indexes[:train_split], indexes[train_split:]
 
 
+def get_wdc_data(
+    train_path,
+    valid_path,
+    test_path,
+    word_index_path=None,
+    num_words=None,
+    max_len=20,
+    batch_size=32,
+    preprocess_data=True,
+    preprocess_method="nltk",
+):
+    train_gen = Dataloader(
+        Dataset(
+            train_path,
+            num_words=num_words,
+            max_len=max_len,
+            preprocess_data=preprocess_data,
+            preprocess_method=preprocess_method,
+        ),
+        batch_size,
+        None,
+    )
+    valid_gen = Dataloader(
+        Dataset(
+            valid_path,
+            num_words=num_words,
+            max_len=max_len,
+            preprocess_data=preprocess_data,
+            preprocess_method=preprocess_method,
+        ),
+        batch_size,
+        None,
+        shuffle=False,
+    )
+    test_gen = Dataloader(
+        Dataset(
+            test_path,
+            num_words=num_words,
+            max_len=max_len,
+            preprocess_data=preprocess_data,
+            preprocess_method=preprocess_method,
+        ),
+        batch_size,
+        None,
+        shuffle=False,
+    )
+    return train_gen, valid_gen, test_gen
+
+
 def get_data(
     data_path,
-    num_words,
-    max_len,
-    batch_size,
+    word_index_path=None,
+    num_words=None,
+    max_len=20,
+    batch_size=32,
     preprocess_data=True,
-    preprocess_method="spacy",
+    preprocess_method="nltk",
     train_test_split=0.8,
 ):
     dataset = Dataset(
