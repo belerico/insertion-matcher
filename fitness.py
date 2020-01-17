@@ -69,8 +69,8 @@ def fit(
         embedding_matrix=embedding_matrix,
         embedding_trainable=embedding_trainable,
         dropout=dropout,
-        rnn_type='LSTM',
-        rnn_dimension=100,
+        rnn_type=rnn_type,
+        rnn_dimension=rnn_dimension,
         activation=activation,
     )
     model.summary()
