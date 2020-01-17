@@ -11,6 +11,8 @@ from keras.layers import (
     Lambda,
     MaxPool2D,
     Dropout,
+    BatchNormalization,
+    SimpleRNN
 )
 from keras.initializers import Constant
 
@@ -49,7 +51,7 @@ def get_deep_cross_model(
         embed = Embedding(
             vocab_size,
             embedding_dimension,
-            weights=[embedding_matrix],
+            embeddings_initializer=Constant(embedding_matrix),
             trainable=embedding_trainable,
             mask_zero=True,
         )
@@ -77,14 +79,14 @@ def get_deep_cross_model(
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
     for conv_depth in convs_depth:
-        x = Conv2D(conv_depth, (3, 3), activation="relu")(x)
+        x = Conv2D(conv_depth, (2, 2), activation="relu")(x)
         x = MaxPool2D()(x)
 
     x = Flatten()(x)
     for i, dense_depth in enumerate(denses_depth):
         x = Dense(dense_depth, activation="relu")(x)
         if i < len(denses_depth) - 1 and dropout:
-            x = Dropout(0.5)(x)
+            x = Dropout(0.3)(x)
 
     output = Dense(1, activation=activation)(x)
 

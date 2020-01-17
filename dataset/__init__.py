@@ -39,12 +39,12 @@ class Dataset:
         contents = []
         for i, x in enumerate(open(data_path, "r").readlines()):
             try:
-                item = parse_content_line(x, attributes=attributes, label=1)
+                item = parse_content_line(x, attributes=attributes, label=True)
                 contents.append(item)
             except:
                 print("Lost data at line {}".format(i))
 
-        contents = np.concatenate(contents, axis=0).astype(object)
+        contents = np.concatenate(contents, axis=0)
         if preprocess_data:
             print("* PREPROCESS DATA")
             if preprocess_method == "spacy":
@@ -53,7 +53,9 @@ class Dataset:
                     contents[:, attr] = [
                         preprocess(doc, method="spacy")
                         for doc in nlp.pipe(
-                            contents[:, attr], batch_size=5000, n_threads=4,
+                            contents[:, attr].astype(object),
+                            batch_size=5000,
+                            n_threads=4,
                         )
                     ]
                 # del contents_df
@@ -80,7 +82,8 @@ class Dataset:
             self.word_index = json.load(open(word_index_path).read())
 
         self.dataset = np.zeros([len(contents), 2, max_len])
-        self.labels = contents[:, len(attributes)]
+        self.labels = contents[:, len(attributes)].astype(int)
+        print(self.labels)
 
         # Tokenize sentences (words -> indices)
         tokenizer = Tokenizer(num_words=num_words)
@@ -112,12 +115,10 @@ class Dataset:
 
 class Dataloader(Sequence):
     def __init__(
-        self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=True
+        self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=False
     ):
         self.dataset = dataset
         self.indexes = indexes if indexes is not None else np.arange(len(self.dataset))
-        if shuffle:
-            np.random.shuffle(self.indexes)
         self.batch_size = batch_size
         self.shuffle = shuffle
 
@@ -148,7 +149,7 @@ class Dataloader(Sequence):
             np.random.shuffle(self.indexes)
 
     def __len__(self):
-        return len(self.indexes) // self.batch_size
+        return int(np.ceil(len(self.indexes) / float(self.batch_size)))
 
 
 def get_train_test_indexes(max_index, train_test_split):
@@ -176,7 +177,7 @@ def get_wdc_data(
         preprocess_data=preprocess_data,
         preprocess_method=preprocess_method,
     )
-    train_gen = Dataloader(train, batch_size, None)
+    train_gen = Dataloader(train, batch_size, None, shuffle=True)
     valid_gen = Dataloader(
         Dataset(
             valid_path,
@@ -225,7 +226,10 @@ def get_data(
     train_indexes, test_indexes = get_train_test_indexes(len(dataset), train_test_split)
     train_gen = Dataloader(dataset, batch_size, train_indexes)
     val_gen = Dataloader(dataset, batch_size, test_indexes)
-    return train_gen, val_gen, dataset.word_index
+    class_weights = class_weight.compute_class_weight(
+        "balanced", np.unique(train_gen.dataset.labels), train_gen.dataset.labels
+    )
+    return train_gen, val_gen, dataset.word_index, class_weights
 
 
 def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):

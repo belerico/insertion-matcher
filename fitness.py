@@ -76,14 +76,14 @@ def fit(
         activation=activation,
     )
     model.summary()
-    model.compile(SGD(learning_rate=1e-4), loss="binary_crossentropy", metrics=["accuracy"])
+    model.compile(Adam(learning_rate=1e-3), loss="binary_crossentropy", metrics=["accuracy"])
     print("* TRAINING")
     model.fit(
         train_gen,
         validation_data=val_gen,
         epochs=epochs,
         callbacks=callbacks_list,
-        verbose=verbosity,
-        class_weight=class_weights,
+        verbose=1,
+        class_weight=class_weights
     )
     return model

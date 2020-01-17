@@ -9,25 +9,25 @@ parser.add_argument(
     "--train-path",
     type=str,
     help="path to train dataset",
-    default="./dataset/computers/train/computers_train_medium.json",
+    default="./dataset/computers/train/computers_train_large.json",
 )
 parser.add_argument(
     "--validation-path",
     type=str,
     help="path to validation dataset",
-    default="./dataset/computers/valid/computers_valid_medium.csv",
+    default="./dataset/computers/valid/computers_valid_large.csv",
 )
 parser.add_argument(
     "--splitted-train-path",
     type=str,
     help="path to write splitted train dataset",
-    default="./dataset/computers/train/computers_splitted_train_medium.json",
+    default="./dataset/computers/train/computers_splitted_train_large.json",
 )
 parser.add_argument(
     "--splitted-validation-path",
     type=str,
     help="path to write splitted validation dataset",
-    default="./dataset/computers/valid/computers_splitted_valid_medium.json",
+    default="./dataset/computers/valid/computers_splitted_valid_large.json",
 )
 
 args = parser.parse_args()
