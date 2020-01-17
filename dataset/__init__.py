@@ -24,14 +24,14 @@ from utils import parse_content_line
 
 class Dataset:
     def __init__(
-        self,
-        data_path,
-        word_index_path=None,
-        attributes=None,
-        preprocess_data=True,
-        preprocess_method="nltk",  # or spacy
-        num_words=None,
-        max_len=20,
+            self,
+            data_path,
+            word_index_path=None,
+            attributes=None,
+            preprocess_data=True,
+            preprocess_method="nltk",  # or spacy
+            num_words=None,
+            max_len=20,
     ):
         if attributes is None:
             attributes = ["title_left", "title_right"]
@@ -115,16 +115,18 @@ class Dataset:
 
 class Dataloader(Sequence):
     def __init__(
-        self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=False
+            self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=False
     ):
         self.dataset = dataset
         self.indexes = indexes if indexes is not None else np.arange(len(self.dataset))
+
+        np.random.shuffle(self.indexes)
         self.batch_size = batch_size
         self.shuffle = shuffle
 
     def __getitem__(self, key):
-        ids = key
-        idf = key + self.batch_size
+        ids = key * self.batch_size
+        idf = ids + self.batch_size if ids < len(self.dataset) else self.dataset
         first_titles = []
         second_titles = []
         labels = []
@@ -149,7 +151,7 @@ class Dataloader(Sequence):
             np.random.shuffle(self.indexes)
 
     def __len__(self):
-        return int(np.ceil(len(self.indexes) / float(self.batch_size)))
+        return len(self.indexes) // self.batch_size
 
 
 def get_train_test_indexes(max_index, train_test_split):
@@ -160,15 +162,15 @@ def get_train_test_indexes(max_index, train_test_split):
 
 
 def get_wdc_data(
-    train_path,
-    valid_path,
-    test_path,
-    word_index_path=None,
-    num_words=None,
-    max_len=20,
-    batch_size=32,
-    preprocess_data=True,
-    preprocess_method="nltk",
+        train_path,
+        valid_path,
+        test_path,
+        word_index_path=None,
+        num_words=None,
+        max_len=20,
+        batch_size=32,
+        preprocess_data=True,
+        preprocess_method="nltk",
 ):
     train = Dataset(
         train_path,
@@ -178,16 +180,18 @@ def get_wdc_data(
         preprocess_method=preprocess_method,
     )
     train_gen = Dataloader(train, batch_size, None, shuffle=True)
+    valid = Dataset(
+        valid_path,
+        num_words=num_words,
+        max_len=max_len,
+        preprocess_data=preprocess_data,
+        preprocess_method=preprocess_method,
+    )
     valid_gen = Dataloader(
-        Dataset(
-            valid_path,
-            num_words=num_words,
-            max_len=max_len,
-            preprocess_data=preprocess_data,
-            preprocess_method=preprocess_method,
-        ),
+        valid,
         batch_size,
         None,
+        shuffle=True
     )
     test_gen = Dataloader(
         Dataset(
@@ -207,14 +211,14 @@ def get_wdc_data(
 
 
 def get_data(
-    data_path,
-    word_index_path=None,
-    num_words=None,
-    max_len=20,
-    batch_size=32,
-    preprocess_data=True,
-    preprocess_method="nltk",
-    train_test_split=0.8,
+        data_path,
+        word_index_path=None,
+        num_words=None,
+        max_len=20,
+        batch_size=32,
+        preprocess_data=True,
+        preprocess_method="nltk",
+        train_test_split=0.8,
 ):
     dataset = Dataset(
         data_path,
@@ -239,7 +243,7 @@ def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):
     np.random.shuffle(indexes)
     for i in range(n_folds):
         fold_dim = int(n_samples / n_folds)
-        test_indexes = indexes[fold_dim * i : fold_dim * (i + 1)]
+        test_indexes = indexes[fold_dim * i: fold_dim * (i + 1)]
         train_indexes = np.setdiff1d(indexes, test_indexes)
         train_gen = Dataloader(dataset, batch_size, train_indexes)
         val_gen = Dataloader(dataset, batch_size, test_indexes)
