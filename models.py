@@ -77,7 +77,7 @@ def get_deep_cross_model(
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
     for conv_depth in convs_depth:
-        x = Conv2D(conv_depth, (2, 2), activation="relu")(x)
+        x = Conv2D(conv_depth, (3, 3), activation="relu")(x)
         x = MaxPool2D()(x)
 
     x = Flatten()(x)

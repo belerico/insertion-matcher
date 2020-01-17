@@ -1,6 +1,8 @@
-from models import get_deep_cross_model
-import keras
 import os
+import keras
+from keras.optimizers import Adam, SGD
+from models import get_deep_cross_model
+
 
 
 def fit(
@@ -74,7 +76,7 @@ def fit(
         activation=activation,
     )
     model.summary()
-    model.compile("adam", loss="binary_crossentropy", metrics=["accuracy"])
+    model.compile(SGD(learning_rate=1e-4), loss="binary_crossentropy", metrics=["accuracy"])
     print("* TRAINING")
     model.fit(
         train_gen,

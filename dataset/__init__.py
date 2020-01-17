@@ -116,6 +116,8 @@ class Dataloader(Sequence):
     ):
         self.dataset = dataset
         self.indexes = indexes if indexes is not None else np.arange(len(self.dataset))
+        if shuffle:
+            np.random.shuffle(self.indexes)
         self.batch_size = batch_size
         self.shuffle = shuffle
 
