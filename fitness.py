@@ -15,7 +15,8 @@ def fit(
     convs_depth,
     denses_depth,
     epochs=20,
-    lstm_dimension=50,
+    rnn_type='LSTM',
+    rnn_dimension=100,
     embedding_matrix=None,
     embedding_trainable=False,
     dropout=False,
@@ -68,7 +69,8 @@ def fit(
         embedding_matrix=embedding_matrix,
         embedding_trainable=embedding_trainable,
         dropout=dropout,
-        lstm_dimension=lstm_dimension,
+        rnn_type='LSTM',
+        rnn_dimension=100,
         activation=activation,
     )
     model.summary()

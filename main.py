@@ -28,7 +28,7 @@ parser.add_argument(
     "--pretrained-embeddings-path",
     type=str,
     help="path to pretrained embedding",
-    default="./dataset/embeddings/w2v/w2v_title_1MinCount_5ContextWindow_100d.txt",
+    default="./dataset/embeddings/fasttext/fasttext_title_1MinCount_5ContextWindow_100d.txt",
 )
 
 args = parser.parse_args()
@@ -89,6 +89,8 @@ if __name__ == "__main__":
         matrix_similarity_function,
         EXP_DIR,
         EARLY_STOPPING,
+        rnn_type='LSTM',
+        rnn_dimension=100,
         embedding_matrix=embedding_matrix,
         embedding_trainable=False,
         convs_depth=CONVS_DEPTH,

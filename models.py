@@ -7,6 +7,7 @@ from keras.layers import (
     Dense,
     Bidirectional,
     LSTM,
+    GRU,
     Lambda,
     MaxPool2D,
     Dropout,
@@ -33,7 +34,8 @@ def get_deep_cross_model(
     convs_depth,
     denses_depth,
     activation,
-    lstm_dimension=100,
+    rnn_type='LSTM',
+    rnn_dimension=100,
     embedding_matrix=None,
     embedding_trainable=False,
     dropout=False,
@@ -55,13 +57,22 @@ def get_deep_cross_model(
     left_encoded = embed(left_input)
     right_encoded = embed(right_input)
 
-    bi_left = Bidirectional(
-        LSTM(lstm_dimension, return_sequences=True), merge_mode="concat"
-    )(left_encoded)
+    if rnn_type == 'GRU':
+        bi_left = Bidirectional(
+            GRU(rnn_dimension, return_sequences=True), merge_mode="concat"
+        )(left_encoded)
 
-    bi_right = Bidirectional(
-        LSTM(lstm_dimension, return_sequences=True), merge_mode="concat"
-    )(right_encoded)
+        bi_right = Bidirectional(
+            GRU(rnn_dimension, return_sequences=True), merge_mode="concat"
+        )(right_encoded)
+    elif rnn_type == 'LSTM':
+        bi_left = Bidirectional(
+            LSTM(rnn_dimension, return_sequences=True), merge_mode="concat"
+        )(left_encoded)
+
+        bi_right = Bidirectional(
+            LSTM(rnn_dimension, return_sequences=True), merge_mode="concat"
+        )(right_encoded)
 
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
