@@ -19,9 +19,11 @@ def fit(
     epochs=20,
     rnn_type='LSTM',
     rnn_dimension=100,
+    rnn_dropout=0.3,
     embedding_matrix=None,
     embedding_trainable=False,
-    dropout=False,
+    embedding_dropout=0.3,
+    mlp_dropout=0.3,
     activation="sigmoid",
     verbosity=2,
     callbacks=False,
@@ -70,9 +72,11 @@ def fit(
         denses_depth=denses_depth,
         embedding_matrix=embedding_matrix,
         embedding_trainable=embedding_trainable,
-        dropout=dropout,
+        embedding_dropout=embedding_dropout,
+        mlp_dropout=mlp_dropout,
         rnn_type=rnn_type,
         rnn_dimension=rnn_dimension,
+        rnn_dropout=rnn_dropout,
         activation=activation,
     )
     model.summary()
@@ -83,7 +87,7 @@ def fit(
         validation_data=val_gen,
         epochs=epochs,
         callbacks=callbacks_list,
-        verbose=1,
+        verbose=verbosity,
         class_weight=class_weights
     )
     return model
