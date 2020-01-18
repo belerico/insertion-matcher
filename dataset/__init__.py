@@ -6,10 +6,11 @@ import multiprocessing as mp
 
 from pandas import pandas
 from collections import Counter
+from keras.utils import Sequence
 from sklearn.utils import class_weight
 from keras.preprocessing.text import Tokenizer
-from keras.utils import Sequence
 from keras.preprocessing.sequence import pad_sequences
+from sklearn.model_selection import StratifiedShuffleSplit
 
 from utils import preprocess
 from utils import parse_content_line
@@ -24,14 +25,14 @@ from utils import parse_content_line
 
 class Dataset:
     def __init__(
-            self,
-            data_path,
-            word_index_path=None,
-            attributes=None,
-            preprocess_data=True,
-            preprocess_method="nltk",  # or spacy
-            num_words=None,
-            max_len=20,
+        self,
+        data_path,
+        word_index_path=None,
+        attributes=None,
+        preprocess_data=True,
+        preprocess_method="nltk",  # or spacy
+        num_words=None,
+        max_len=20,
     ):
         if attributes is None:
             attributes = ["title_left", "title_right"]
@@ -83,7 +84,6 @@ class Dataset:
 
         self.dataset = np.zeros([len(contents), 2, max_len])
         self.labels = contents[:, len(attributes)].astype(int)
-        print(self.labels)
 
         # Tokenize sentences (words -> indices)
         tokenizer = Tokenizer(num_words=num_words)
@@ -115,18 +115,17 @@ class Dataset:
 
 class Dataloader(Sequence):
     def __init__(
-            self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=False
+        self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=False
     ):
         self.dataset = dataset
         self.indexes = indexes if indexes is not None else np.arange(len(self.dataset))
-
-        np.random.shuffle(self.indexes)
+        # np.random.shuffle(self.indexes)
         self.batch_size = batch_size
         self.shuffle = shuffle
 
     def __getitem__(self, key):
         ids = key * self.batch_size
-        idf = ids + self.batch_size if ids < len(self.dataset) else self.dataset
+        idf = ids + self.batch_size if ids < len(self.dataset) else len(self.dataset)
         first_titles = []
         second_titles = []
         labels = []
@@ -154,23 +153,26 @@ class Dataloader(Sequence):
         return len(self.indexes) // self.batch_size
 
 
-def get_train_test_indexes(max_index, train_test_split):
-    indexes = np.arange(max_index)
-    np.random.shuffle(indexes)
-    train_split = int(max_index * train_test_split)
-    return indexes[:train_split], indexes[train_split:]
+def get_train_test_indexes(labels, train_test_split):
+    # indexes = np.arange(max_index)
+    # np.random.shuffle(indexes)
+    # train_split = int(max_index * train_test_split)
+    # return indexes[:train_split], indexes[train_split:]
+    return StratifiedShuffleSplit(
+        n_splits=1, random_state=42, train_size=train_test_split
+    ).split(X=np.zeros(len(labels)), y=labels)
 
 
 def get_wdc_data(
-        train_path,
-        valid_path,
-        test_path,
-        word_index_path=None,
-        num_words=None,
-        max_len=20,
-        batch_size=32,
-        preprocess_data=True,
-        preprocess_method="nltk",
+    train_path,
+    valid_path,
+    test_path,
+    word_index_path=None,
+    num_words=None,
+    max_len=20,
+    batch_size=32,
+    preprocess_data=True,
+    preprocess_method="nltk",
 ):
     train = Dataset(
         train_path,
@@ -180,18 +182,17 @@ def get_wdc_data(
         preprocess_method=preprocess_method,
     )
     train_gen = Dataloader(train, batch_size, None, shuffle=True)
-    valid = Dataset(
-        valid_path,
-        num_words=num_words,
-        max_len=max_len,
-        preprocess_data=preprocess_data,
-        preprocess_method=preprocess_method,
-    )
     valid_gen = Dataloader(
-        valid,
+        Dataset(
+            valid_path,
+            num_words=num_words,
+            max_len=max_len,
+            preprocess_data=preprocess_data,
+            preprocess_method=preprocess_method,
+        ),
         batch_size,
         None,
-        shuffle=True
+        shuffle=False,
     )
     test_gen = Dataloader(
         Dataset(
@@ -203,6 +204,7 @@ def get_wdc_data(
         ),
         batch_size,
         None,
+        shuffle=False,
     )
     class_weights = class_weight.compute_class_weight(
         "balanced", np.unique(train.labels), train.labels
@@ -211,14 +213,14 @@ def get_wdc_data(
 
 
 def get_data(
-        data_path,
-        word_index_path=None,
-        num_words=None,
-        max_len=20,
-        batch_size=32,
-        preprocess_data=True,
-        preprocess_method="nltk",
-        train_test_split=0.8,
+    data_path,
+    word_index_path=None,
+    num_words=None,
+    max_len=20,
+    batch_size=32,
+    preprocess_data=True,
+    preprocess_method="nltk",
+    train_test_split=0.8,
 ):
     dataset = Dataset(
         data_path,
@@ -227,11 +229,13 @@ def get_data(
         preprocess_data=preprocess_data,
         preprocess_method=preprocess_method,
     )
-    train_indexes, test_indexes = get_train_test_indexes(len(dataset), train_test_split)
-    train_gen = Dataloader(dataset, batch_size, train_indexes)
-    val_gen = Dataloader(dataset, batch_size, test_indexes)
+    indexes = list(get_train_test_indexes(
+        dataset.labels, train_test_split
+    ))
+    train_gen = Dataloader(dataset, batch_size, indexes[0][0])
+    val_gen = Dataloader(dataset, batch_size, indexes[0][1])
     class_weights = class_weight.compute_class_weight(
-        "balanced", np.unique(train_gen.dataset.labels), train_gen.dataset.labels
+        "balanced", np.unique(dataset.labels), dataset.labels
     )
     return train_gen, val_gen, dataset.word_index, class_weights
 
@@ -243,7 +247,7 @@ def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):
     np.random.shuffle(indexes)
     for i in range(n_folds):
         fold_dim = int(n_samples / n_folds)
-        test_indexes = indexes[fold_dim * i: fold_dim * (i + 1)]
+        test_indexes = indexes[fold_dim * i : fold_dim * (i + 1)]
         train_indexes = np.setdiff1d(indexes, test_indexes)
         train_gen = Dataloader(dataset, batch_size, train_indexes)
         val_gen = Dataloader(dataset, batch_size, test_indexes)
