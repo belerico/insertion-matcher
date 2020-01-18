@@ -103,12 +103,12 @@ if __name__ == "__main__":
         dropout=False,
         activation="sigmoid",
         class_weights=class_weights,
-        epochs=5,
+        epochs=1,
     )
 
 y_true = [v[1] for v in val_gen]
 y_true = functools.reduce(operator.iconcat, y_true, [])
-predictions = model.predict(val_gen) > 0.8
+predictions = model.predict(val_gen) > 0.5
 print(predictions)
 print(model.predict(val_gen))
 print(classification_report(y_true, predictions))
