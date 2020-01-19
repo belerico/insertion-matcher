@@ -41,12 +41,14 @@ EXP_DIR = args.exp_path
 PRETRAINED_EMBEDDING_PATH = args.pretrained_embeddings_path
 NUM_WORDS = None
 MAX_LEN = 20
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 EMBEDDING_DIM = 100
+RNN_UNITS = 200
 EARLY_STOPPING = 10
-CONVS_DEPTH = [16]
-DENSES_DEPTH = [128, 64, 32]
-wdc = True
+CONVS_DEPTH = [1]
+DENSES_DEPTH = [16]
+EPOCHS = 1
+wdc = False
 
 if __name__ == "__main__":
     print("* LOADING DATA")
@@ -85,7 +87,7 @@ if __name__ == "__main__":
             PRETRAINED_EMBEDDING_PATH, NUM_WORDS + 1, EMBEDDING_DIM, word_index
         )
     matrix_similarity_function = cosine_similarity
-    model = fit(
+    model, results = fit(
         train_gen,
         val_gen,
         NUM_WORDS,
@@ -95,15 +97,18 @@ if __name__ == "__main__":
         EXP_DIR,
         EARLY_STOPPING,
         rnn_type="LSTM",
-        rnn_dimension=100,
-        embedding_matrix=embedding_matrix,
-        embedding_trainable=False,
+        rnn_dimension=RNN_UNITS,
+        rnn_dropout=0.3,
+        embedding_matrix=None,
+        embedding_trainable=True,
+        embedding_dropout=None,
         convs_depth=CONVS_DEPTH,
         denses_depth=DENSES_DEPTH,
-        dropout=False,
+        mlp_dropout=0.3,
         activation="sigmoid",
         class_weights=class_weights,
-        epochs=1,
+        epochs=EPOCHS,
+        verbosity=1
     )
 
 y_true = [v[1] for v in val_gen]

@@ -2,30 +2,32 @@ import os
 import keras
 from keras.optimizers import Adam, SGD
 from models import get_deep_cross_model
-
+from metrics import precision, recall, f1
 
 
 def fit(
-    train_gen,
-    val_gen,
-    num_words,
-    embedding_dim,
-    max_len,
-    matrix_similarity_function,
-    exp_dir,
-    early_stopping_after,
-    convs_depth,
-    denses_depth,
-    epochs=20,
-    rnn_type='LSTM',
-    rnn_dimension=100,
-    embedding_matrix=None,
-    embedding_trainable=False,
-    dropout=False,
-    activation="sigmoid",
-    verbosity=2,
-    callbacks=False,
-    class_weights=None,
+        train_gen,
+        val_gen,
+        num_words,
+        embedding_dim,
+        max_len,
+        matrix_similarity_function,
+        exp_dir,
+        early_stopping_after,
+        convs_depth,
+        denses_depth,
+        epochs=20,
+        rnn_type='LSTM',
+        rnn_dimension=100,
+        rnn_dropout=0.3,
+        embedding_matrix=None,
+        embedding_trainable=False,
+        embedding_dropout=0.3,
+        mlp_dropout=0.3,
+        activation="sigmoid",
+        verbosity=2,
+        callbacks=False,
+        class_weights=None,
 ):
     graph_base_dir = os.path.join(exp_dir, "graph")
     checkpoint_base_dir = os.path.join(exp_dir, "checkpoint")
@@ -70,20 +72,27 @@ def fit(
         denses_depth=denses_depth,
         embedding_matrix=embedding_matrix,
         embedding_trainable=embedding_trainable,
-        dropout=dropout,
+        embedding_dropout=embedding_dropout,
+        mlp_dropout=mlp_dropout,
         rnn_type=rnn_type,
         rnn_dimension=rnn_dimension,
+        rnn_dropout=rnn_dropout,
         activation=activation,
     )
     model.summary()
-    model.compile(Adam(learning_rate=1e-3), loss="binary_crossentropy", metrics=["accuracy"])
+    model.compile(Adam(learning_rate=1e-3), loss="binary_crossentropy", metrics=["accuracy",
+                                                                                 precision,
+                                                                                 recall,
+                                                                                 f1])
     print("* TRAINING")
     model.fit(
         train_gen,
         validation_data=val_gen,
         epochs=epochs,
         callbacks=callbacks_list,
-        verbose=1,
+        verbose=verbosity,
         class_weight=class_weights
     )
-    return model
+    results = model.evaluate(val_gen)
+    print(f"* FINAL EVALUATION {results}")
+    return model, results
