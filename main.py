@@ -45,8 +45,8 @@ BATCH_SIZE = 32
 EMBEDDING_DIM = 100
 RNN_UNITS = 200
 EARLY_STOPPING = 10
-CONVS_DEPTH = [1]
-DENSES_DEPTH = [16]
+CONVS_DEPTH = 2
+DENSES_DEPTH = 2
 EPOCHS = 1
 wdc = False
 
@@ -96,20 +96,27 @@ if __name__ == "__main__":
         matrix_similarity_function,
         EXP_DIR,
         EARLY_STOPPING,
-        rnn_type="LSTM",
-        rnn_dimension=RNN_UNITS,
-        rnn_dropout=0.3,
-        embedding_matrix=None,
-        embedding_trainable=True,
-        embedding_dropout=None,
-        convs_depth=CONVS_DEPTH,
-        denses_depth=DENSES_DEPTH,
-        mlp_dropout=0.3,
+        convs_depth=1,
+        denses_depth=1,
         activation="sigmoid",
-        class_weights=class_weights,
+        embedding_matrix=None,
+        embedding_trainable=False,
+        embedding_dropout=0.3,
+        rnn_type="LSTM",
+        rnn_units=100,
+        rnn_dropout=0.3,
+        convs_filter_banks=8,
+        convs_kernel_size=2,
+        pool_size=2,
+        denses_units=32,
+        mlp_dropout=0.3,
         epochs=EPOCHS,
-        verbosity=1
+        verbosity=1,
+        callbacks=False,
+        class_weights=None,
+        optimizer=None
     )
+print(results)
 
 y_true = [v[1] for v in val_gen]
 y_true = functools.reduce(operator.iconcat, y_true, [])
