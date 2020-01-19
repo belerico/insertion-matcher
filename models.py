@@ -97,10 +97,10 @@ def get_deep_cross_model(
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
     for i in range(convs_depth):
-        if convs_filter_banks >= 4:
+        if convs_filter_banks >= 2:
             x = Conv2D(convs_filter_banks, convs_kernel_size, activation="relu")(x)
             x = MaxPool2D(pool_size=pool_size)(x)
-            convs_filter_banks //= 2
+            convs_filter_banks = int(convs_filter_banks / 2)
 
     x = Flatten()(x)
     x = Tanh()(x)
@@ -110,7 +110,7 @@ def get_deep_cross_model(
             x = Dense(denses_units, activation="relu")(x)
             if i < denses_depth - 1 and mlp_dropout:
                 x = Dropout(mlp_dropout)(x)
-            denses_units //= 2
+            denses_units = int(denses_units / 2)
 
     output = Dense(1, activation=activation)(x)
 
