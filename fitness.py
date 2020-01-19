@@ -28,6 +28,7 @@ def fit(
         verbosity=2,
         callbacks=False,
         class_weights=None,
+        optimizer=None
 ):
     graph_base_dir = os.path.join(exp_dir, "graph")
     checkpoint_base_dir = os.path.join(exp_dir, "checkpoint")
@@ -80,10 +81,13 @@ def fit(
         activation=activation,
     )
     model.summary()
-    model.compile(Adam(learning_rate=1e-3), loss="binary_crossentropy", metrics=["accuracy",
-                                                                                 precision,
-                                                                                 recall,
-                                                                                 f1])
+    if optimizer is None:
+        optimizer = Adam(learning_rate=1e-3)
+    model.compile(optimizer, loss="binary_crossentropy", metrics=["accuracy",
+                                                                  precision,
+                                                                  recall,
+                                                                  f1])
+
     print("* TRAINING")
     model.fit(
         train_gen,
