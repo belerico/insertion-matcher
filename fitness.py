@@ -1,6 +1,6 @@
 import os
 import keras
-from keras.optimizers import Adam, SGD
+from keras.optimizers import Adam, SGD, RMSprop
 from models import get_deep_cross_model
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
@@ -11,34 +11,34 @@ import operator
 
 
 def fit(
-        train_gen,
-        val_gen,
-        num_words,
-        embedding_dim,
-        max_len,
-        matrix_similarity_function,
-        exp_dir,
-        early_stopping_after,
-        convs_depth,
-        denses_depth,
-        activation="sigmoid",
-        embedding_matrix=None,
-        embedding_trainable=False,
-        embedding_dropout=0.3,
-        rnn_type="LSTM",
-        rnn_units=100,
-        rnn_dropout=0.3,
-        convs_filter_banks=8,
-        convs_kernel_size=2,
-        pool_size=2,
-        denses_units=32,
-        mlp_dropout=0.3,
-        epochs=20,
-        verbosity=1,
-        callbacks=False,
-        class_weights=None,
-        optimizer=None,
-        threshold=0.5
+    train_gen,
+    val_gen,
+    num_words,
+    embedding_dim,
+    max_len,
+    matrix_similarity_function,
+    exp_dir,
+    early_stopping_after,
+    convs_depth,
+    denses_depth,
+    activation="sigmoid",
+    embedding_matrix=None,
+    embedding_trainable=False,
+    embedding_dropout=0.3,
+    rnn_type="LSTM",
+    rnn_units=100,
+    rnn_dropout=0.3,
+    convs_filter_banks=8,
+    convs_kernel_size=2,
+    pool_size=2,
+    denses_units=32,
+    mlp_dropout=0.3,
+    epochs=20,
+    verbosity=1,
+    callbacks=False,
+    class_weights=None,
+    optimizer=None,
+    threshold=0.5,
 ):
     graph_base_dir = os.path.join(exp_dir, "graph")
     checkpoint_base_dir = os.path.join(exp_dir, "checkpoint")
@@ -96,7 +96,7 @@ def fit(
     )
     model.summary()
     if optimizer is None:
-        optimizer = Adam(learning_rate=1e-3)
+        optimizer = Adam(learning_rate=1e-4)
     model.compile(optimizer, loss="binary_crossentropy", metrics=["accuracy"])
 
     print("* TRAINING")
@@ -106,13 +106,17 @@ def fit(
         epochs=epochs,
         callbacks=callbacks_list,
         verbose=verbosity,
-        class_weight=class_weights
+        class_weight=class_weights,
     )
     y_true = [v[1] for v in val_gen]
     y_true = functools.reduce(operator.iconcat, y_true, [])
     y_pred = model.predict(val_gen) > threshold
 
-    results = [accuracy_score(y_pred, y_true), precision_score(y_pred, y_true),
-               recall_score(y_pred, y_true), f1_score(y_pred, y_true)]
+    results = [
+        accuracy_score(y_pred, y_true),
+        precision_score(y_pred, y_true, average='weighted'),
+        recall_score(y_pred, y_true, average='weighted'),
+        f1_score(y_pred, y_true, average='weighted'),
+    ]
     print(f"* FINAL EVALUATION {results}")
     return model, results
