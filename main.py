@@ -13,7 +13,7 @@ parser.add_argument(
     "--train-path",
     type=str,
     help="path to train dataset",
-    default="./dataset/computers/train/computers_splitted_train_medium.json",
+    default="./dataset/computers/train/computers_train_large.json",
 )
 parser.add_argument(
     "--valid-path",
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         embedding_matrix = get_pretrained_embedding(
             PRETRAINED_EMBEDDING_PATH, NUM_WORDS + 1, EMBEDDING_DIM, word_index
         )
-    matrix_similarity_function = cosine_similarity
+    matrix_similarity_function = dot_similarity
     model, results = fit(
         train_gen,
         val_gen,
@@ -100,20 +100,20 @@ if __name__ == "__main__":
         denses_depth=1,
         activation="sigmoid",
         embedding_matrix=None,
-        embedding_trainable=False,
+        embedding_trainable=True,
         embedding_dropout=0.3,
         rnn_type="LSTM",
         rnn_units=100,
         rnn_dropout=0.3,
-        convs_filter_banks=8,
-        convs_kernel_size=2,
+        convs_filter_banks=16,
+        convs_kernel_size=3,
         pool_size=2,
         denses_units=32,
         mlp_dropout=0.3,
         epochs=EPOCHS,
         verbosity=1,
         callbacks=False,
-        class_weights=None,
+        class_weights=class_weights,
         optimizer=None
     )
 print(results)
@@ -121,6 +121,4 @@ print(results)
 y_true = [v[1] for v in val_gen]
 y_true = functools.reduce(operator.iconcat, y_true, [])
 predictions = model.predict(val_gen) > 0.5
-print(predictions)
-print(model.predict(val_gen))
 print(classification_report(y_true, predictions))

@@ -2,7 +2,12 @@ import os
 import keras
 from keras.optimizers import Adam, SGD
 from models import get_deep_cross_model
-from metrics import precision, recall, f1
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+import functools
+import operator
 
 
 def fit(
@@ -32,7 +37,8 @@ def fit(
         verbosity=1,
         callbacks=False,
         class_weights=None,
-        optimizer=None
+        optimizer=None,
+        threshold=0.5
 ):
     graph_base_dir = os.path.join(exp_dir, "graph")
     checkpoint_base_dir = os.path.join(exp_dir, "checkpoint")
@@ -91,10 +97,7 @@ def fit(
     model.summary()
     if optimizer is None:
         optimizer = Adam(learning_rate=1e-3)
-    model.compile(optimizer, loss="binary_crossentropy", metrics=["accuracy",
-                                                                  precision,
-                                                                  recall,
-                                                                  f1])
+    model.compile(optimizer, loss="binary_crossentropy", metrics=["accuracy"])
 
     print("* TRAINING")
     model.fit(
@@ -105,6 +108,11 @@ def fit(
         verbose=verbosity,
         class_weight=class_weights
     )
-    results = model.evaluate(val_gen)
+    y_true = [v[1] for v in val_gen]
+    y_true = functools.reduce(operator.iconcat, y_true, [])
+    y_pred = model.predict(val_gen) > threshold
+
+    results = [accuracy_score(y_pred, y_true), precision_score(y_pred, y_true),
+               recall_score(y_pred, y_true), f1_score(y_pred, y_true)]
     print(f"* FINAL EVALUATION {results}")
     return model, results

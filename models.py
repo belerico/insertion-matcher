@@ -103,7 +103,7 @@ def get_deep_cross_model(
             convs_filter_banks = int(convs_filter_banks / 2)
 
     x = Flatten()(x)
-    x = Tanh()(x)
+    #x = Tanh()(x)
 
     for i in range(denses_depth):
         if denses_units >= 16:
