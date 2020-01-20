@@ -64,7 +64,7 @@ def get_deep_cross_model(
         embed = Embedding(
             vocab_size,
             embedding_dimension,
-            embeddings_initializer=Constant(embedding_matrix),
+            weights=[embedding_matrix],
             trainable=embedding_trainable,
             mask_zero=True,
         )
@@ -77,16 +77,10 @@ def get_deep_cross_model(
 
     rnn_dropout = rnn_dropout if rnn_dropout else 0
     if rnn_type == "GRU":
-        rnn_left = GRU(
-            rnn_units, return_sequences=True, recurrent_dropout=rnn_dropout
-        )
-        rnn_right = GRU(
-            rnn_units, return_sequences=True, recurrent_dropout=rnn_dropout
-        )
+        rnn_left = GRU(rnn_units, return_sequences=True, recurrent_dropout=rnn_dropout)
+        rnn_right = GRU(rnn_units, return_sequences=True, recurrent_dropout=rnn_dropout)
     elif rnn_type == "LSTM":
-        rnn_left = LSTM(
-            rnn_units, return_sequences=True, recurrent_dropout=rnn_dropout
-        )
+        rnn_left = LSTM(rnn_units, return_sequences=True, recurrent_dropout=rnn_dropout)
         rnn_right = LSTM(
             rnn_units, return_sequences=True, recurrent_dropout=rnn_dropout
         )
@@ -96,14 +90,11 @@ def get_deep_cross_model(
 
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
-    for i in range(convs_depth):
-        if convs_filter_banks >= 2:
-            x = Conv2D(convs_filter_banks, convs_kernel_size, activation="relu")(x)
-            x = MaxPool2D(pool_size=pool_size)(x)
-            convs_filter_banks = int(convs_filter_banks / 2)
+    x = Conv2D(convs_filter_banks, convs_kernel_size, activation="relu")(x)
+    x = MaxPool2D(pool_size=pool_size)(x)
 
     x = Flatten()(x)
-    #x = Tanh()(x)
+    x = Tanh()(x)
 
     for i in range(denses_depth):
         if denses_units >= 16:
