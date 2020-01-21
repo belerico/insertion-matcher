@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
+from sklearn.metrics import classification_report
 import functools
 import operator
 
@@ -19,7 +20,6 @@ def fit(
     matrix_similarity_function,
     exp_dir,
     early_stopping_after,
-    convs_depth,
     denses_depth,
     activation="sigmoid",
     embedding_matrix=None,
@@ -27,11 +27,9 @@ def fit(
     embedding_dropout=0.3,
     rnn_type="LSTM",
     rnn_units=100,
-    rnn_dropout=0.3,
     convs_filter_banks=8,
     convs_kernel_size=2,
     pool_size=2,
-    denses_units=32,
     mlp_dropout=0.3,
     epochs=20,
     verbosity=1,
@@ -79,7 +77,6 @@ def fit(
         embedding_dim,
         max_len,
         matrix_similarity_function,
-        convs_depth=convs_depth,
         denses_depth=denses_depth,
         activation=activation,
         embedding_matrix=embedding_matrix,
@@ -87,11 +84,9 @@ def fit(
         embedding_dropout=embedding_dropout,
         rnn_type=rnn_type,
         rnn_units=rnn_units,
-        rnn_dropout=rnn_dropout,
         convs_filter_banks=convs_filter_banks,
         convs_kernel_size=convs_kernel_size,
         pool_size=pool_size,
-        denses_units=denses_units,
         mlp_dropout=mlp_dropout,
     )
     model.summary()
@@ -112,11 +107,18 @@ def fit(
     y_true = functools.reduce(operator.iconcat, y_true, [])
     y_pred = model.predict(val_gen) > threshold
 
+    results = classification_report(y_true, y_pred, digits=3, output_dict=True)
     results = [
-        accuracy_score(y_pred, y_true),
-        precision_score(y_pred, y_true, average='weighted'),
-        recall_score(y_pred, y_true, average='weighted'),
-        f1_score(y_pred, y_true, average='weighted'),
+        results["accuracy"],
+        results["weighted_avg"]["precision"],
+        results["weighted_avg"]["recall"],
+        results["weighted_avg"]["f1-score"],
     ]
+    # results = [
+    #     accuracy_score(y_pred, y_true),
+    #     precision_score(y_pred, y_true, labels=[0, 1], average='weighted'),
+    #     recall_score(y_pred, y_true, labels=[0, 1], average='weighted'),
+    #     f1_score(y_pred, y_true, labels=[0, 1], average='weighted'),
+    # ]
     print(f"* FINAL EVALUATION {results}")
     return model, results
