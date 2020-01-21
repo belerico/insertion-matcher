@@ -26,7 +26,7 @@ parser.add_argument(
     "--dataset-path",
     type=str,
     help="path to dataset",
-    default="./dataset/computers/train/computers_splitted_train_medium.json",
+    default="./dataset/computers/train/computers_splitted_train_xlarge.json",
 )
 parser.add_argument(
     "--preprocess-method", type=str, help="nltk or spacy preprocess", default="spacy",
@@ -40,7 +40,7 @@ parser.add_argument(
 args = parser.parse_args()
 preprocess_method = args.preprocess_method
 
-attrs = ["title", "brand", "description"]
+attrs = ["title"]
 attributes = [attr + "_left" for attr in attrs] + [attr + "_right" for attr in attrs]
 print("* LOADING DATASET")
 dataset = np.concatenate(
@@ -79,26 +79,30 @@ sentences = [row.split() for row in cleaned_sentences["sentences"]]
 # Train W2V or FastText
 print("* TRAIN EMBEDDINGS")
 size = 150
-algorithm = "fasttext"
+min_count = 1
+context_window = 9
+epochs = 300
+algorithm = "w2v"
 if algorithm == "w2v":
     model = Word2Vec(
         sg=args.embed_algorithm,  #  Use SKIPGRAM model
         hs=0,  # Don't use hierarchical softmax
-        min_count=9,  # All words that have an absolute frequency < 20 will be discarded
-        window=7,  # Context-window size
+        min_count=min_count,  # All words that have an absolute frequency < 20 will be discarded
+        window=context_window,  # Context-window size
         size=size,  # Embeddings dimension
         sample=1e-5,
         alpha=0.03,
         min_alpha=0.0007,
         negative=10,  # How many negative samples will be sampled for each positive example
         workers=cores - 1,
+        compute_loss=True,
     )
 elif algorithm == "fasttext":
     model = FastText(
         sg=args.embed_algorithm,  #  Use SKIPGRAM model
         hs=0,  # Don't use hierarchical softmax
-        min_count=5,  # All words that have an absolute frequency < 20 will be discarded
-        window=9,  # Context-window size
+        min_count=min_count,  # All words that have an absolute frequency < 20 will be discarded
+        window=context_window,  # Context-window size
         size=size,  # Embeddings dimension
         sample=1e-5,
         alpha=0.03,
@@ -111,12 +115,25 @@ elif algorithm == "fasttext":
     )
 
 model.build_vocab(sentences, progress_per=10000)
-model.train(sentences, total_examples=model.corpus_count, epochs=30, report_delay=1)
+model.train(sentences, total_examples=model.corpus_count, epochs=epochs, report_delay=1)
 print("* DONE")
 
 if algorithm == "w2v":
     sentences_dict = {}
-    with open("./dataset/w2v_" + "_".join(attrs) + "_" + str(size) + ".txt", "w") as f:
+    with open(
+        "./dataset/w2v_"
+        + "_".join(attrs)
+        + "_"
+        + str(epochs)
+        + "Epochs_"
+        + str(context_window)
+        + "Context_"
+        + str(min_count)
+        + "MinCount_"
+        + str(size)
+        + "d.txt",
+        "w",
+    ) as f:
         for sentence in sentences:
             for token in sentence:
                 try:
@@ -133,12 +150,34 @@ if algorithm == "w2v":
         f.flush()
         f.close()
     model.wv.save_word2vec_format(
-        "./dataset/w2v_" + "_".join(attrs) + "_" + str(size) + ".bin", binary=True
+        "./dataset/w2v_"
+        + "_".join(attrs)
+        + "_"
+        + str(epochs)
+        + "Epochs_"
+        + str(context_window)
+        + "Context_"
+        + str(min_count)
+        + "MinCount_"
+        + str(size)
+        + "d.bin",
+        binary=True,
     )
 elif algorithm == "fasttext":
     sentences_dict = {}
     with open(
-        "./dataset/fasttext_" + "_".join(attrs) + "_" + str(size) + ".txt", "w"
+        "./dataset/fasttext_"
+        + "_".join(attrs)
+        + "_"
+        + str(epochs)
+        + "Epochs_"
+        + str(context_window)
+        + "Context_"
+        + str(min_count)
+        + "MinCount_"
+        + str(size)
+        + "d.txt",
+        "w",
     ) as f:
         for sentence in sentences:
             for token in sentence:
@@ -157,4 +196,16 @@ elif algorithm == "fasttext":
                         continue
         f.flush()
         f.close()
-    model.wv.save("./dataset/fasttext_" + "_".join(attrs) + "_" + str(size) + ".bin")
+    model.wv.save(
+        "./dataset/w2v_"
+        + "_".join(attrs)
+        + "_"
+        + str(epochs)
+        + "Epochs_"
+        + str(context_window)
+        + "Context_"
+        + str(min_count)
+        + "MinCount_"
+        + str(size)
+        + "d.bin"
+    )
