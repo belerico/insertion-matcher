@@ -121,13 +121,13 @@ print("* DONE")
 if algorithm == "w2v":
     sentences_dict = {}
     with open(
-        "./dataset/w2v_"
+        "./dataset/embeddings/w2v/w2v_"
         + "_".join(attrs)
         + "_"
         + str(epochs)
         + "Epochs_"
         + str(context_window)
-        + "Context_"
+        + "ContextWindow_"
         + str(min_count)
         + "MinCount_"
         + str(size)
@@ -150,13 +150,13 @@ if algorithm == "w2v":
         f.flush()
         f.close()
     model.wv.save_word2vec_format(
-        "./dataset/w2v_"
+        "./dataset/embeddings/w2v/w2v_"
         + "_".join(attrs)
         + "_"
         + str(epochs)
         + "Epochs_"
         + str(context_window)
-        + "Context_"
+        + "ContextWindow_"
         + str(min_count)
         + "MinCount_"
         + str(size)
@@ -166,13 +166,13 @@ if algorithm == "w2v":
 elif algorithm == "fasttext":
     sentences_dict = {}
     with open(
-        "./dataset/fasttext_"
+        "./dataset/embeddings/fasttext/fasttext_"
         + "_".join(attrs)
         + "_"
         + str(epochs)
         + "Epochs_"
         + str(context_window)
-        + "Context_"
+        + "ContextWindow_"
         + str(min_count)
         + "MinCount_"
         + str(size)
@@ -197,13 +197,13 @@ elif algorithm == "fasttext":
         f.flush()
         f.close()
     model.wv.save(
-        "./dataset/w2v_"
+        "./dataset/embeddings/fasttext/fasttext_"
         + "_".join(attrs)
         + "_"
         + str(epochs)
         + "Epochs_"
         + str(context_window)
-        + "Context_"
+        + "ContextWindow_"
         + str(min_count)
         + "MinCount_"
         + str(size)
