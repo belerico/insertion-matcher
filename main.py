@@ -13,7 +13,7 @@ parser.add_argument(
     "--train-path",
     type=str,
     help="path to train dataset",
-    default="./dataset/computers/train/computers_train_large.json",
+    default="./dataset/computers/train/computers_splitted_train_medium.json",
 )
 parser.add_argument(
     "--valid-path",
@@ -32,7 +32,7 @@ parser.add_argument(
     "--pretrained-embeddings-path",
     type=str,
     help="path to pretrained embedding",
-    default="./dataset/embeddings/w2v/w2v_title_1MinCount_5ContextWindow_100d.txt",
+    default="./dataset/embeddings/w2v/w2v_title_300Epochs_1MinCount_9ContextWindow_150d.txt",
 )
 
 args = parser.parse_args()
@@ -42,13 +42,15 @@ PRETRAINED_EMBEDDING_PATH = args.pretrained_embeddings_path
 NUM_WORDS = None
 MAX_LEN = 20
 BATCH_SIZE = 32
-EMBEDDING_DIM = 100
-RNN_UNITS = 200
-EARLY_STOPPING = 10
-CONVS_DEPTH = 2
-DENSES_DEPTH = 2
+EMBEDDING_DIM = 150
+RNN_UNITS = 150
+CONVS_FILTER_BANKS = 32
+CONVS_KERNEL_SIZE = 3
+POOL_SIZE = 2
+DENSES_DEPTH = 3
 EPOCHS = 1
-wdc = False
+EARLY_STOPPING = 10
+wdc = True
 
 if __name__ == "__main__":
     print("* LOADING DATA")
@@ -96,27 +98,23 @@ if __name__ == "__main__":
         matrix_similarity_function,
         EXP_DIR,
         EARLY_STOPPING,
-        convs_depth=1,
-        denses_depth=1,
+        denses_depth=DENSES_DEPTH,
         activation="sigmoid",
-        embedding_matrix=None,
-        embedding_trainable=True,
+        embedding_matrix=embedding_matrix,
+        embedding_trainable=False,
         embedding_dropout=0.3,
         rnn_type="LSTM",
-        rnn_units=100,
-        rnn_dropout=0.3,
-        convs_filter_banks=16,
-        convs_kernel_size=3,
-        pool_size=2,
-        denses_units=32,
+        rnn_units=RNN_UNITS,
+        convs_filter_banks=CONVS_FILTER_BANKS,
+        convs_kernel_size=CONVS_KERNEL_SIZE,
+        pool_size=POOL_SIZE,
         mlp_dropout=0.3,
         epochs=EPOCHS,
         verbosity=1,
         callbacks=False,
         class_weights=class_weights,
-        optimizer=None
+        optimizer=None,
     )
-print(results)
 
 y_true = [v[1] for v in val_gen]
 y_true = functools.reduce(operator.iconcat, y_true, [])

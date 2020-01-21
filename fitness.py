@@ -110,9 +110,9 @@ def fit(
     results = classification_report(y_true, y_pred, digits=3, output_dict=True)
     results = [
         results["accuracy"],
-        results["weighted_avg"]["precision"],
-        results["weighted_avg"]["recall"],
-        results["weighted_avg"]["f1-score"],
+        results["weighted avg"]["precision"],
+        results["weighted avg"]["recall"],
+        results["weighted avg"]["f1-score"],
     ]
     # results = [
     #     accuracy_score(y_pred, y_true),
