@@ -17,3 +17,43 @@ Train large - w2v 300 epochs 100d
     accuracy                           0.63      1088
    macro avg       0.65      0.69      0.62      1088
 weighted avg       0.76      0.63      0.65      1088
+
+Train medium - w2v 300 epochs 150d
+              precision    recall  f1-score   support
+
+           0       0.85      0.58      0.69       791
+           1       0.39      0.73      0.51       297
+
+    accuracy                           0.62      1088
+   macro avg       0.62      0.65      0.60      1088
+weighted avg       0.72      0.62      0.64      1088
+
+Train large - w2v 300 epochs 150d
+              precision    recall  f1-score   support
+
+           0       0.89      0.54      0.68       793
+           1       0.40      0.82      0.54       295
+
+    accuracy                           0.62      1088
+   macro avg       0.65      0.68      0.61      1088
+weighted avg       0.76      0.62      0.64      1088
+
+Train medium - fasttext 300 epochs 150d
+              precision    recall  f1-score   support
+
+           0       0.79      0.69      0.74       791
+           1       0.38      0.51      0.44       297
+
+    accuracy                           0.64      1088
+   macro avg       0.59      0.60      0.59      1088
+weighted avg       0.68      0.64      0.66      1088
+
+Train large - fasttext 300 epochs 150d
+              precision    recall  f1-score   support
+
+           0       0.88      0.58      0.70       793
+           1       0.41      0.79      0.54       295
+
+    accuracy                           0.64      1088
+   macro avg       0.65      0.69      0.62      1088
+weighted avg       0.76      0.64      0.66      1088
