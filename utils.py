@@ -7,6 +7,7 @@ from nltk import word_tokenize
 from nltk.corpus import stopwords
 from keras import backend as K
 from keras.layers import dot
+from keras.preprocessing.text import text_to_word_sequence
 from keras.backend.tensorflow_backend import tf_math_ops
 
 english_stopwords = set(stopwords.words("english"))
@@ -28,6 +29,14 @@ def preprocess(doc, method='nltk', dataset=True):
             [
                 token
                 for token in word_tokenize(doc.lower())
+                if not (token == "null" or token in english_stopwords or token in string.punctuation)
+            ]
+        )
+    elif method == 'keras':
+        tokens = " ".join(
+            [
+                token
+                for token in text_to_word_sequence(doc)
                 if not (token == "null" or token in english_stopwords or token in string.punctuation)
             ]
         )

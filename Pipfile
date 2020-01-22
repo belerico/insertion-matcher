@@ -12,10 +12,11 @@ numpy = "*"
 gensim = "*"
 pandas = "*"
 spacy = "*"
-keras = "*"
-tensorflow = "*"
 nltk = "*"
 sklearn = "*"
+jupyter = "*"
+tensorflow = "==2.0"
+keras = "==2.3.1"
 
 [requires]
 python_version = "3.7"
