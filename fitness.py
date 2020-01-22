@@ -63,7 +63,7 @@ def fit(
         )
 
         cb_stop = keras.callbacks.EarlyStopping(
-            "val_accuracy",
+            "val_loss",
             patience=early_stopping_after,
             mode="max",
             restore_best_weights=True,
