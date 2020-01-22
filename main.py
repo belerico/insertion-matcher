@@ -1,62 +1,53 @@
-import json
-import argparse
+import utils
 import functools
 import operator
 from fitness import fit
 from dataset import get_data, get_wdc_data
+from keras.optimizers import Adam
 from sklearn.metrics import classification_report
-from utils import dot_similarity, get_pretrained_embedding, cosine_similarity
-from keras.backend.tensorflow_backend import softmax
+import json
+from utils import get_pretrained_embedding
+# # Execution
 
-parser = argparse.ArgumentParser(description="Train model")
-parser.add_argument(
-    "--train-path",
-    type=str,
-    help="path to train dataset",
-    default="./dataset/computers/train/computers_splitted_train_medium.json",
-)
-parser.add_argument(
-    "--valid-path",
-    type=str,
-    help="path to validation dataset",
-    default="./dataset/computers/valid/computers_splitted_valid_medium.json",
-)
-parser.add_argument(
-    "--test-path",
-    type=str,
-    help="path to test dataset",
-    default="./dataset/computers/test/computers_gs.json",
-)
-parser.add_argument("--exp-path", type=str, help="path to exp", default="./experiments")
-parser.add_argument(
-    "--pretrained-embeddings-path",
-    type=str,
-    help="path to pretrained embedding",
-    default="./dataset/embeddings/w2v/w2v_title_300Epochs_1MinCount_9ContextWindow_150d.txt",
-)
 
-args = parser.parse_args()
-DATA_PATH = args.train_path
-EXP_DIR = args.exp_path
-PRETRAINED_EMBEDDING_PATH = args.pretrained_embeddings_path
+TRAIN_PATH = './dataset/computers/train/computers_train_large.json'
+VALID_PATH = './dataset/computers/valid/computers_splitted_valid_medium.json'
+TEST_PATH = './dataset/computers/test/computers_gs.json'
+PRETRAINED_EMBEDDING_PATH = \
+    './dataset/embeddings/fasttext/fasttext_title_300Epochs_9ContextWindow_1MinCount_100d.txt'
 NUM_WORDS = None
 MAX_LEN = 20
-BATCH_SIZE = 32
-EMBEDDING_DIM = 150
-RNN_UNITS = 150
-CONVS_FILTER_BANKS = 32
-CONVS_KERNEL_SIZE = 3
-POOL_SIZE = 2
-DENSES_DEPTH = 3
-EPOCHS = 1
-EARLY_STOPPING = 10
-wdc = True
+BATCH_SIZE = 64
+EMBEDDING_DIM = 100
+EPOCHS = 100
+EXP_DIR = './experiments/large/fasttext_200'
+WDC = True
+
+import pickle
+
+with open('./data/exp' + str(EMBEDDING_DIM) + 'embedding_w2v.pickle', 'rb') as f:
+    params = pickle.load(f)
+max_f1 = 0
+best_params = {}
+for param in params:
+    if param[1] > max_f1:
+        best_params = param[0]
+        max_f1 = param[1]
+print(best_params)
+
+LR = best_params['lr']
+RNN_UNITS = best_params['rnn_units']
+SIMILARITY_FUNC = 'dot_similarity' if best_params['similarity_type'] == 0 else 'cosine_similarity'
+CONVS_FILTER_BANKS = best_params['convs_filter_banks']
+CONVS_KERNEL_SIZE = best_params['convs_kernel_size']
+POOL_SIZE = best_params['pool_size']
+DENSES_DEPTH = best_params['denses_depth']
 
 if __name__ == "__main__":
     print("* LOADING DATA")
-    if not wdc:
+    if not WDC:
         train_gen, val_gen, word_index, class_weights = get_data(
-            DATA_PATH,
+            TRAIN_PATH,
             word_index_path=None,
             num_words=NUM_WORDS,
             max_len=MAX_LEN,
@@ -67,9 +58,9 @@ if __name__ == "__main__":
         )
     else:
         train_gen, val_gen, test_gen, class_weights = get_wdc_data(
-            args.train_path,
-            args.valid_path,
-            args.test_path,
+            TRAIN_PATH,
+            VALID_PATH,
+            TEST_PATH,
             word_index_path="dataset/title_word_index.json",
             num_words=NUM_WORDS,
             max_len=MAX_LEN,
@@ -88,7 +79,7 @@ if __name__ == "__main__":
         embedding_matrix = get_pretrained_embedding(
             PRETRAINED_EMBEDDING_PATH, NUM_WORDS + 1, EMBEDDING_DIM, word_index
         )
-    matrix_similarity_function = dot_similarity
+    matrix_similarity_function = getattr(utils, SIMILARITY_FUNC)
     model, results = fit(
         train_gen,
         val_gen,
@@ -97,7 +88,7 @@ if __name__ == "__main__":
         MAX_LEN,
         matrix_similarity_function,
         EXP_DIR,
-        EARLY_STOPPING,
+        10,
         denses_depth=DENSES_DEPTH,
         activation="sigmoid",
         embedding_matrix=embedding_matrix,
@@ -110,13 +101,13 @@ if __name__ == "__main__":
         pool_size=POOL_SIZE,
         mlp_dropout=0.3,
         epochs=EPOCHS,
-        verbosity=1,
-        callbacks=False,
-        class_weights=class_weights,
-        optimizer=None,
+        verbosity=2,
+        callbacks=True,
+        class_weights=None,
+        optimizer=None
     )
 
-y_true = [v[1] for v in val_gen]
+y_true = [v[1] for v in test_gen]
 y_true = functools.reduce(operator.iconcat, y_true, [])
-predictions = model.predict(val_gen) > 0.5
+predictions = model.predict(test_gen) > 0.5
 print(classification_report(y_true, predictions))
