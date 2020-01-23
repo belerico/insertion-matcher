@@ -7,7 +7,7 @@ if __name__ == '__main__':
         'embedding_dim': 100,
         'embedding_path':
             './dataset/embeddings/w2v/new_w2v_title_300Epochs_1MinCount_9ContextWindow_100d.bin',
-        'epochs': 1
+        'epochs': 5
     }
     train_ds, valid_ds, test_ds, TEXT = get_data(
         train_path='./dataset/computers/train/computers_splitted_train_medium.json',
@@ -18,5 +18,6 @@ if __name__ == '__main__':
     load_embedding(TEXT, config['embedding_path'])
 
     model = fit(TEXT, train_dl, valid_dl, config=config, hidden_dim=200, lr=1e-3,
-                loss='BCELoss', validate_each_epoch=True)
+                similarity='dot', loss='BCELoss', conv_depth=3, dense_depth=16,
+                validate_each_epoch=True)
     evaluate(model, test_dl)

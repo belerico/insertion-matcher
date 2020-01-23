@@ -70,10 +70,13 @@ def get_fitness_for_automl(config):
     train_dl, valid_dl, test_dl = get_iterators(train_ds, valid_ds, test_ds)
     load_embedding(TEXT, config['embedding_path'])
 
-    def fitness(denses_depth, lr, convs_filter_banks, rnn_units):
+    def fitness(denses_depth, lr, convs_filter_banks, rnn_units, similarity_type):
+        similarity_type = 'dot' if similarity_type == 0 else 'cosine'
+
         model = fit(TEXT, train_dl, valid_dl, config=config, hidden_dim=rnn_units, lr=lr,
                     conv_depth=convs_filter_banks, loss='BCELoss', dense_depth=denses_depth,
-                    validate_each_epoch=False)
+                    validate_each_epoch=False, similarity=similarity_type)
+
         result = evaluate(model, valid_dl, print_results=False)
         return result
 
@@ -98,6 +101,7 @@ if __name__ == '__main__':
     param = {
         'lr': ('cont', [0.00001, 1.0]),
         'rnn_units': ('int', [150, 250]),
+        'similarity_type': ('int', [0, 1]),
         'convs_filter_banks': ('int', [4, 64]),
         'denses_depth': ('int', [1, 6]),
     }
@@ -107,6 +111,7 @@ if __name__ == '__main__':
         'rnn_units': 200,
         'convs_filter_banks': 32,
         'denses_depth': 3,
+        'similarity_type': 0
     }]
 
     # creating a GP surrogate model with a Squared Exponantial covariance function,

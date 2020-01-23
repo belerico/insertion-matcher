@@ -8,8 +8,9 @@ import time
 
 
 def fit(TEXT, train_dl, valid_dl, config, conv_depth, dense_depth, hidden_dim=100, lr=1e-3,
-        loss='BCELoss', validate_each_epoch=True):
-    model = Model(TEXT, hidden_dim=hidden_dim, conv_depth=conv_depth, dense_depth=dense_depth)
+        kernel_size=3, pool_size=2, similarity='dot', loss='BCELoss', validate_each_epoch=True):
+    model = Model(TEXT, hidden_dim=hidden_dim, conv_depth=conv_depth, dense_depth=dense_depth,
+                  similarity=similarity, max_len=20, kernel_size=kernel_size, pool_size=pool_size)
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_func = getattr(nn, loss)()
     model.train()
@@ -47,7 +48,7 @@ def fit(TEXT, train_dl, valid_dl, config, conv_depth, dense_depth, hidden_dim=10
     return model
 
 
-def evaluate(model, test_dl, print_results=False):
+def evaluate(model, test_dl, print_results=True):
     y_true = [v[2] for v in test_dl]
     y_true = functools.reduce(operator.iconcat, y_true, [])
     predictions = []
@@ -58,4 +59,4 @@ def evaluate(model, test_dl, print_results=False):
 
     if print_results:
         print(classification_report(y_true, predictions))
-    return f1_score(y_true, predictions, average='weighted')
+    return f1_score(y_true, predictions, average='weighted') + 1e-10
