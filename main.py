@@ -3,29 +3,29 @@ import functools
 import operator
 from fitness import fit
 from dataset import get_data, get_wdc_data
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD, RMSprop
 from sklearn.metrics import classification_report
 import json
 from utils import get_pretrained_embedding
 # # Execution
 
 
-TRAIN_PATH = './dataset/computers/train/computers_train_large.json'
+TRAIN_PATH = './dataset/computers/train/computers_splitted_train_medium.json'
 VALID_PATH = './dataset/computers/valid/computers_splitted_valid_medium.json'
 TEST_PATH = './dataset/computers/test/computers_gs.json'
 PRETRAINED_EMBEDDING_PATH = \
-    './dataset/embeddings/fasttext/fasttext_title_300Epochs_9ContextWindow_1MinCount_100d.txt'
+    './dataset/embeddings/w2v/w2v_title_300Epochs_9ContextWindow_1MinCount_100d.txt'
 NUM_WORDS = None
 MAX_LEN = 20
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 EMBEDDING_DIM = 100
-EPOCHS = 100
-EXP_DIR = './experiments/large/fasttext_200'
+EPOCHS = 5
+EXP_DIR = './experiments/medium/w2v_200'
 WDC = True
 
 import pickle
 
-with open('./data/exp' + str(EMBEDDING_DIM) + 'embedding_w2v.pickle', 'rb') as f:
+with open('./automl_experiments/exp' + str(EMBEDDING_DIM) + 'embedding_w2v.pickle', 'rb') as f:
     params = pickle.load(f)
 max_f1 = 0
 best_params = {}
@@ -42,6 +42,14 @@ CONVS_FILTER_BANKS = best_params['convs_filter_banks']
 CONVS_KERNEL_SIZE = best_params['convs_kernel_size']
 POOL_SIZE = best_params['pool_size']
 DENSES_DEPTH = best_params['denses_depth']
+
+LR = 1e-3
+RNN_UNITS = 100
+SIMILARITY_FUNC = 'dot_similarity' if best_params['similarity_type'] == 0 else 'cosine_similarity'
+CONVS_FILTER_BANKS = 8
+CONVS_KERNEL_SIZE = 2
+POOL_SIZE = 2
+DENSES_DEPTH = 2
 
 if __name__ == "__main__":
     print("* LOADING DATA")
@@ -80,6 +88,8 @@ if __name__ == "__main__":
             PRETRAINED_EMBEDDING_PATH, NUM_WORDS + 1, EMBEDDING_DIM, word_index
         )
     matrix_similarity_function = getattr(utils, SIMILARITY_FUNC)
+    class_weight = {-1: 3.,
+                    1: 1.}
     model, results = fit(
         train_gen,
         val_gen,
@@ -102,9 +112,12 @@ if __name__ == "__main__":
         mlp_dropout=0.3,
         epochs=EPOCHS,
         verbosity=2,
-        callbacks=True,
-        class_weights=None,
-        optimizer=None
+        callbacks=False,
+        class_weights=class_weights,
+        optimizer=RMSprop(),
+        set_tanh=False,
+        hidden_activation='relu',
+        loss='mse'
     )
 
 y_true = [v[1] for v in test_gen]
