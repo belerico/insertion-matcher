@@ -1,254 +1,156 @@
 import json
-import spacy
+import string
+
 import numpy as np
-import itertools
-import multiprocessing as mp
-
+import torch
+from nltk import word_tokenize
+from torchtext.data import Field, Dataset, Example
+import numpy as np
 from pandas import pandas
-from collections import Counter
-from keras.utils import Sequence
-from sklearn.utils import class_weight
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-from sklearn.model_selection import StratifiedShuffleSplit
-
-from utils import preprocess
-from utils import parse_content_line
+from nltk.corpus import stopwords
+import re
 
 
-# TODO: to work with variable length sentences, we need to pad, within the batch, all the
-# sentences that are shorter than the maximum-length sentence
-# model = Sequential()
-# model.add(Masking(mask_value=0., input_shape=(None, 10)))
-# model.add(LSTM(32))
-
-
-class Dataset:
-    def __init__(
-        self,
-        data_path,
-        word_index_path=None,
-        attributes=None,
-        preprocess_data=True,
-        preprocess_method="nltk",  # or spacy
-        num_words=None,
-        max_len=20,
-    ):
-        if attributes is None:
-            attributes = ["title_left", "title_right"]
-
-        contents = []
-        for i, x in enumerate(open(data_path, "r").readlines()):
-            try:
-                item = parse_content_line(x, attributes=attributes, label=True)
-                contents.append(item)
-            except:
-                print("Lost data at line {}".format(i))
-
-        contents = np.concatenate(contents, axis=0)
-        if preprocess_data:
-            print("* PREPROCESS DATA")
-            if preprocess_method == "spacy":
-                nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
-                for attr in range(len(attributes)):
-                    contents[:, attr] = [
-                        preprocess(doc, method="spacy")
-                        for doc in nlp.pipe(
-                            contents[:, attr].astype(object),
-                            batch_size=5000,
-                            n_threads=4,
-                        )
-                    ]
-                # del contents_df
-            elif preprocess_method == "nltk":
-                with mp.Pool(processes=4) as pool:
-                    for attr in range(len(attributes)):
-                        contents[:, attr] = pool.map(preprocess, contents[:, attr])
-            print("* DONE")
-
-        if word_index_path is None:
-            cleaned_sentences = list(itertools.chain(*contents[:, : len(attributes)]))
-            # Create a word index on our own
-            cleaned_sentences = list(
-                itertools.chain(*list(map(str.split, cleaned_sentences)))
-            )
-            # List of all unique words, sorted by frequency
-            self.word_index = {
-                word: (idx + 1)
-                for idx, word in enumerate(list(Counter(cleaned_sentences).keys()))
-            }
-            print("* FOUND", len(self.word_index), "unique vocabs")
-            del cleaned_sentences
-        else:
-            self.word_index = json.load(open(word_index_path).read())
-
-        self.dataset = np.zeros([len(contents), 2, max_len])
-        self.labels = contents[:, len(attributes)].astype(int)
-
-        # Tokenize sentences (words -> indices)
-        tokenizer = Tokenizer(num_words=num_words)
-        tokenizer.word_index = self.word_index
-        self.dataset[:, 0, :] = pad_sequences(
-            tokenizer.texts_to_sequences(contents[:, 0]),
-            max_len,
-            padding="post",
-            truncating="post",
+def preprocess(doc, method='nltk', dataset=True):
+    english_stopwords = set(stopwords.words("english"))
+    non_alphanum_regex = re.compile(r'\W+')
+    if method == 'spacy':
+        tokens = " ".join(
+            [
+                token.lower_
+                for token in doc
+                if token
+                   and not (token.lower_ == "null" or token.is_stop or token.is_punct)
+            ]
         )
-        self.dataset[:, 1, :] = pad_sequences(
-            tokenizer.texts_to_sequences(contents[:, 1]),
-            max_len,
-            padding="post",
-            truncating="post",
-        )
-        del tokenizer
+    elif method == 'nltk':
+        # doc = non_alphanum_regex.sub(' ', doc).lower()
+        tokens = [
+            token
+            for token in word_tokenize(doc.lower())
+            if not (token == "null" or token in english_stopwords or token in string.punctuation)
+        ]
+    if dataset or tokens != "":
+        return tokens
+
+
+def parse_content_line(x, attributes=None, label=True):
+    if attributes is None:
+        attributes = ["title_left", "title_right"]
+    item = json.loads(x)
+    elements = [item[attr] if item[attr] is not None else '' for attr in attributes]
+    if label:
+        elements.append(int(item["label"]))
+    item = np.array(elements)
+    return item[np.newaxis, :]
+
+
+class DataFrameDataset(Dataset):
+    """Class for using pandas DataFrames as a datasource"""
+
+    def __init__(self, examples, fields, filter_pred=None):
+        """
+        Create a dataset from a pandas dataframe of examples and Fields
+        Arguments:
+            examples pd.DataFrame: DataFrame of examples
+            fields {str: Field}: The Fields to use in this tuple. The
+                string is a field name, and the Field is the associated field.
+            filter_pred (callable or None): use only exanples for which
+                filter_pred(example) is true, or use all examples if None.
+                Default is None
+        """
+        self.examples = examples.apply(SeriesExample.fromSeries, args=(fields,),
+                                       axis=1).tolist()
+        if filter_pred is not None:
+            self.examples = filter(filter_pred, self.examples)
+        self.fields = dict(fields)
+        # Unpack field tuples
+        for n, f in list(self.fields.items()):
+            if isinstance(n, tuple):
+                self.fields.update(zip(n, f))
+                del self.fields[n]
+
+
+class SeriesExample(Example):
+    """Class to convert a pandas Series to an Example"""
+
+    @classmethod
+    def fromSeries(cls, data, fields):
+        return cls.fromdict(data.to_dict(), fields)
+
+    @classmethod
+    def fromdict(cls, data, fields):
+        ex = cls()
+        for key, field in fields.items():
+            if key not in data:
+                raise ValueError("Specified key {} was not found in "
+                                 "the input data".format(key))
+            if field is not None:
+                setattr(ex, key, field.preprocess(data[key]))
+            else:
+                setattr(ex, key, data[key])
+        return ex
+
+
+def get_data(train_path, valid_path, test_path):
+    TEXT = Field(sequential=True, tokenize=preprocess, lower=True, fix_length=20, batch_first=True)
+    LABEL = Field(sequential=False, use_vocab=False, is_target=True, batch_first=True)
+
+    contents = []
+    for i, x in enumerate(
+            open(train_path, "r").readlines()):
+        try:
+            item = parse_content_line(x, attributes=None, label=True)
+            contents.append(item)
+        except:
+            print("Lost data at line {}".format(i))
+
+    contents = np.concatenate(contents, axis=0)
+    train = pandas.DataFrame(data=contents, columns=['title_left', 'title_right', 'label'])
+
+    contents = []
+    for i, x in enumerate(
+            open(valid_path,
+                 "r").readlines()):
+        try:
+            item = parse_content_line(x, attributes=None, label=True)
+            contents.append(item)
+        except:
+            print("Lost data at line {}".format(i))
+
+    contents = np.concatenate(contents, axis=0)
+    valid = pandas.DataFrame(data=contents, columns=['title_left', 'title_right', 'label'])
+
+    contents = []
+    for i, x in enumerate(open(test_path, "r").readlines()):
+        try:
+            item = parse_content_line(x, attributes=None, label=True)
+            contents.append(item)
+        except:
+            print("Lost data at line {}".format(i))
+
+    contents = np.concatenate(contents, axis=0)
+    test = pandas.DataFrame(data=contents, columns=['title_left', 'title_right', 'label'])
+
+    fields = {"title_left": TEXT, 'title_right': TEXT, 'label': LABEL}
+    train_ds = DataFrameDataset(train, fields)
+    valid_ds = DataFrameDataset(valid, fields)
+    test_ds = DataFrameDataset(test, fields)
+
+    return train_ds, valid_ds, test_ds, TEXT,
+
+
+class BatchWrapper:
+    def __init__(self, dl, x_vars, y_var):
+        self.dl, self.x_vars, self.y_var = dl, x_vars, y_var  # we pass in the list of attributes for x
+
+    def __iter__(self):
+        for batch in self.dl:
+            left = getattr(batch, self.x_vars[0])  # we assume only one input in this wrapper
+            right = getattr(batch, self.x_vars[1])  # we assume only one input in this wrapper
+            y = torch.Tensor(list(map(float, getattr(batch, self.y_var))))
+
+            yield (left, right, y)
 
     def __len__(self):
-        return len(self.dataset)
-
-    def __getitem__(self, key):
-        item = self.dataset[key]
-        first = item[0]
-        second = item[1]
-        label = np.array([int(self.labels[key])])
-        return first, second, label
-
-
-class Dataloader(Sequence):
-    def __init__(
-        self, dataset, batch_size=32, indexes: np.ndarray = None, shuffle=False
-    ):
-        self.dataset = dataset
-        self.indexes = indexes if indexes is not None else np.arange(len(self.dataset))
-        np.random.shuffle(self.indexes)
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-
-    def __getitem__(self, key):
-        ids = key * self.batch_size
-        idf = ids + self.batch_size if ids < len(self.dataset) else len(self.dataset)
-        first_titles = []
-        second_titles = []
-        labels = []
-
-        for id_item in range(ids, idf):
-            first, second, label = self.dataset[self.indexes[id_item]]
-            first = first[np.newaxis, :]
-            second = second[np.newaxis, :]
-            label = label[np.newaxis, :]
-            first_titles.append(first)
-            second_titles.append(second)
-            labels.append(label)
-
-        first_titles = np.concatenate(first_titles, axis=0)
-        second_titles = np.concatenate(second_titles, axis=0)
-        labels = np.concatenate(labels, axis=0)
-
-        return [first_titles, second_titles], labels
-
-    def on_epoch_end(self):
-        if self.shuffle:
-            np.random.shuffle(self.indexes)
-
-    def __len__(self):
-        return len(self.indexes) // self.batch_size
-
-
-def get_train_test_indexes(labels, train_test_split):
-    # indexes = np.arange(max_index)
-    # np.random.shuffle(indexes)
-    # train_split = int(max_index * train_test_split)
-    # return indexes[:train_split], indexes[train_split:]
-    return StratifiedShuffleSplit(
-        n_splits=1, random_state=42, train_size=train_test_split
-    ).split(X=np.zeros(len(labels)), y=labels)
-
-
-def get_wdc_data(
-    train_path,
-    valid_path,
-    test_path,
-    word_index_path=None,
-    num_words=None,
-    max_len=20,
-    batch_size=32,
-    preprocess_data=True,
-    preprocess_method="nltk",
-):
-    train = Dataset(
-        train_path,
-        num_words=num_words,
-        max_len=max_len,
-        preprocess_data=preprocess_data,
-        preprocess_method=preprocess_method,
-    )
-    train_gen = Dataloader(train, batch_size, None, shuffle=True)
-    valid_gen = Dataloader(
-        Dataset(
-            valid_path,
-            num_words=num_words,
-            max_len=max_len,
-            preprocess_data=preprocess_data,
-            preprocess_method=preprocess_method,
-        ),
-        batch_size,
-        None,
-        shuffle=False,
-    )
-    test_gen = Dataloader(
-        Dataset(
-            test_path,
-            num_words=num_words,
-            max_len=max_len,
-            preprocess_data=preprocess_data,
-            preprocess_method=preprocess_method,
-        ),
-        batch_size,
-        None,
-        shuffle=False,
-    )
-    class_weights = class_weight.compute_class_weight(
-        "balanced", np.unique(train.labels), train.labels
-    )
-    return train_gen, valid_gen, test_gen, class_weights
-
-
-def get_data(
-    data_path,
-    word_index_path=None,
-    num_words=None,
-    max_len=20,
-    batch_size=32,
-    preprocess_data=True,
-    preprocess_method="nltk",
-    train_test_split=0.8,
-):
-    dataset = Dataset(
-        data_path,
-        num_words=num_words,
-        max_len=max_len,
-        preprocess_data=preprocess_data,
-        preprocess_method=preprocess_method,
-    )
-    indexes = list(get_train_test_indexes(
-        dataset.labels, train_test_split
-    ))
-    train_gen = Dataloader(dataset, batch_size, indexes[0][0])
-    val_gen = Dataloader(dataset, batch_size, indexes[0][1])
-    class_weights = class_weight.compute_class_weight(
-        "balanced", np.unique(dataset.labels), dataset.labels
-    )
-    return train_gen, val_gen, dataset.word_index, class_weights
-
-
-def get_kfold_generator(data_path, num_words, max_len, batch_size, n_folds):
-    dataset = Dataset(data_path, num_words=num_words, max_len=max_len)
-    n_samples = len(dataset)
-    indexes = np.arange(n_samples)
-    np.random.shuffle(indexes)
-    for i in range(n_folds):
-        fold_dim = int(n_samples / n_folds)
-        test_indexes = indexes[fold_dim * i : fold_dim * (i + 1)]
-        train_indexes = np.setdiff1d(indexes, test_indexes)
-        train_gen = Dataloader(dataset, batch_size, train_indexes)
-        val_gen = Dataloader(dataset, batch_size, test_indexes)
-        yield train_gen, val_gen
+        return len(self.dl)
