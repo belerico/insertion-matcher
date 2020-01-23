@@ -72,9 +72,10 @@ def get_fitness_for_automl(config):
 
     def fitness(denses_depth, lr, convs_filter_banks, rnn_units):
         model = fit(TEXT, train_dl, valid_dl, config=config, hidden_dim=rnn_units, lr=lr,
-                    conv_depth=convs_filter_banks, loss='BCELoss', dense_depth=denses_depth)
-        results = evaluate(model, test_dl)
-        return results[2]
+                    conv_depth=convs_filter_banks, loss='BCELoss', dense_depth=denses_depth,
+                    validate_each_epoch=False)
+        result = evaluate(model, valid_dl, print_results=False)
+        return result
 
     return fitness
 
@@ -87,7 +88,7 @@ if __name__ == '__main__':
         'test_path': "./dataset/computers/test/computers_gs.json",
         'embedding_path':
             './dataset/embeddings/w2v/new_w2v_title_300Epochs_1MinCount_9ContextWindow_100d.bin',
-        'epochs': 5
+        'epochs': 1
     }
 
     # ### ExpectedImprovement
