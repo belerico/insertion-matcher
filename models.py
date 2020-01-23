@@ -1,122 +1,42 @@
-from keras.models import Model
-from keras.layers import (
-    Input,
-    Embedding,
-    Conv2D,
-    Flatten,
-    Dense,
-    Bidirectional,
-    LSTM,
-    GRU,
-    Lambda,
-    MaxPool2D,
-    Dropout,
-    BatchNormalization,
-)
-from keras.initializers import Constant
-from keras.backend.tensorflow_backend import tanh
+import torch
+from torch import nn as nn
+from torch.nn import functional as F
 
 
-def gen_interaction_matrix(matrix_similarity_function):
-    def fun(inputs_list):
-        bi_left = inputs_list[0]
-        bi_right = inputs_list[1]
-        matrix = matrix_similarity_function(bi_left, bi_right)
+class Model(nn.Module):
+    def __init__(self, TEXT, hidden_dim, emb_dim=50, conv_depth=16, kernel_size=3, pool_size=2):
+        super().__init__()
+        self.embedding = nn.Embedding.from_pretrained(TEXT.vocab.vectors)
+        self.encoder_left = nn.LSTM(emb_dim, hidden_dim, num_layers=1, bidirectional=False,
+                                    batch_first=True)
+        self.encoder_right = nn.LSTM(emb_dim, hidden_dim, num_layers=1, bidirectional=False,
+                                     batch_first=True)
 
-        return matrix
+        self.conv1 = nn.Conv2d(1, conv_depth, kernel_size)
+        self.batch_norm1 = nn.BatchNorm2d(conv_depth)
+        self.max_pool1 = nn.MaxPool2d(pool_size)
+        self.mlp1 = nn.Linear(1296, 32)
+        self.mlp2 = nn.Linear(32, 16)
+        self.out = nn.Linear(16, 1)
+        self.sigmoid = nn.Sigmoid()
 
-    return Lambda(fun)
-
-
-def Tanh():
-    def fun(x):
-        return tanh(x)
-
-    return Lambda(fun)
-
-
-def get_deep_cross_model(
-        vocab_size,
-        embedding_dimension,
-        vec_dimension,
-        matrix_similarity_function,
-        denses_depth,
-        activation,
-        embedding_matrix=None,
-        embedding_trainable=False,
-        embedding_dropout=0.3,
-        rnn_type="LSTM",
-        rnn_units=100,
-        convs_filter_banks=8,
-        convs_kernel_size=2,
-        pool_size=2,
-        mlp_dropout=0.3,
-        set_tanh=True,
-        hidden_activation='relu'
-):
-    left_input = Input((vec_dimension,))
-    right_input = Input((vec_dimension,))
-
-    if embedding_matrix is None:
-        embed = Embedding(vocab_size, embedding_dimension, mask_zero=True)
-    else:
-        embed = Embedding(
-            vocab_size,
-            embedding_dimension,
-            weights=[embedding_matrix],
-            trainable=embedding_trainable,
-            mask_zero=True,
-        )
-
-    left_encoded = embed(left_input)
-    right_encoded = embed(right_input)
-    if embedding_dropout:
-        left_encoded = Dropout(embedding_dropout)(left_encoded)
-        right_encoded = Dropout(embedding_dropout)(right_encoded)
-
-    if rnn_type == "GRU":
-        rnn_left = GRU(
-            rnn_units,
-            return_sequences=True,
-            implementation=1,
-        )
-        rnn_right = GRU(
-            rnn_units,
-            return_sequences=True,
-            implementation=1,
-        )
-    elif rnn_type == "LSTM":
-        rnn_left = LSTM(
-            rnn_units,
-            return_sequences=True,
-            implementation=1,
-        )
-        rnn_right = LSTM(
-            rnn_units,
-            return_sequences=True,
-            implementation=1,
-        )
-
-    bi_left = Bidirectional(rnn_left, merge_mode="concat")(left_encoded)
-    bi_right = Bidirectional(rnn_right, merge_mode="concat")(right_encoded)
-
-    x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
-
-    x = Conv2D(convs_filter_banks, convs_kernel_size, activation=hidden_activation)(x)
-    x = BatchNormalization()(x)
-    x = MaxPool2D(pool_size=pool_size)(x)
-
-    x = Flatten()(x)
-    if set_tanh:
-        x = Tanh()(x)
-
-    for i in range(denses_depth):
-        denses_units = 16 * 2 ** (denses_depth - i - 1)
-        x = Dense(denses_units, activation=hidden_activation)(x)
-        if mlp_dropout:
-            x = Dropout(mlp_dropout)(x)
-
-    output = Dense(1, activation=activation)(x)
-
-    model = Model(inputs=[left_input, right_input], outputs=[output])
-    return model
+    def forward(self, seq):
+        hdn_left, _ = self.encoder_left(self.embedding(seq[0]))
+        hdn_right, _ = self.encoder_right(self.embedding(seq[1]))
+        similarity = torch.matmul(hdn_left, torch.transpose(hdn_right, 1, 2))
+        similarity = torch.unsqueeze(similarity, 1)
+        x = self.conv1(similarity)
+        x = F.relu(x)
+        x = self.batch_norm1(x)
+        x = self.max_pool1(x)
+        x = torch.flatten(x, start_dim=1)
+        x = torch.tanh(x)
+        x = self.mlp1(x)
+        x = F.relu(x)
+        x = F.dropout(x, 0.3)
+        x = self.mlp2(x)
+        x = F.relu(x)
+        x = F.dropout(x, 0.3)
+        x = self.out(x)
+        x = self.sigmoid(x)
+        return x

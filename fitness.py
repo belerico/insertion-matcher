@@ -1,128 +1,40 @@
-import os
-import keras
-from keras.optimizers import Adam, SGD, RMSprop
-from models import get_deep_cross_model
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import f1_score
-from sklearn.metrics import classification_report
-import functools
-import operator
+import torch
+from torch import optim as optim, nn as nn
+
+from models import Model
+from pytorch_main import config
 
 
-def fit(
-    train_gen,
-    val_gen,
-    num_words,
-    embedding_dim,
-    max_len,
-    matrix_similarity_function,
-    exp_dir,
-    early_stopping_after,
-    denses_depth,
-    activation="tanh",
-    embedding_matrix=None,
-    embedding_trainable=False,
-    embedding_dropout=0.3,
-    rnn_type="LSTM",
-    rnn_units=100,
-    convs_filter_banks=8,
-    convs_kernel_size=2,
-    pool_size=2,
-    mlp_dropout=0.3,
-    epochs=20,
-    verbosity=1,
-    callbacks=False,
-    class_weights=None,
-    optimizer=None,
-    threshold=0.5,
-    set_tanh=True,
-    hidden_activation='relu',
-    loss='binary_crossentropy'
-):
-    graph_base_dir = os.path.join(exp_dir, "graph")
-    checkpoint_base_dir = os.path.join(exp_dir, "checkpoint")
-    logs_dir = os.path.join(exp_dir, "logs")
-    csv_path = os.path.join(logs_dir, "log.csv")
+def fit(TEXT, train_dl, valid_dl, hidden_dim=100, emb_dim=100, lr=1e-3, loss='BCELoss'):
+    model = Model(TEXT, hidden_dim=hidden_dim, emb_dim=emb_dim)
 
-    os.makedirs(graph_base_dir, exist_ok=True)
-    os.makedirs(checkpoint_base_dir, exist_ok=True)
-    os.makedirs(logs_dir, exist_ok=True)
+    opt = optim.Adam(model.parameters(), lr=lr)
+    loss_func = getattr(nn, loss)()
+    model.train()
 
-    callbacks_list = []
-    if callbacks:
-        cb_tb = keras.callbacks.TensorBoard(
-            log_dir=graph_base_dir,
-            histogram_freq=0,
-            write_graph=True,
-            write_images=True,
-        )
+    print("Start training")
+    for epoch in range(1, config['epochs'] + 1):
+        running_loss = 0.0
 
-        best_path = os.path.join(checkpoint_base_dir, "best.h5")
+        for left, right, y in train_dl:
+            opt.zero_grad()
+            preds = model([left, right])
+            loss = loss_func(preds, torch.unsqueeze(y, 1))
+            loss.backward()
+            opt.step()
+            running_loss += loss.data.item()
 
-        cb_best = keras.callbacks.ModelCheckpoint(
-            best_path, "val_loss", save_best_only=True
-        )
+        epoch_loss = running_loss / len(train_dl)
 
-        cb_stop = keras.callbacks.EarlyStopping(
-            "val_loss",
-            patience=early_stopping_after,
-            mode="min",
-            restore_best_weights=True,
-        )
-        cb_csv = keras.callbacks.CSVLogger(csv_path)
-        callbacks_list = [cb_stop]
+        # calculate the validation loss for this epoch
+        val_loss = 0.0
+        model.eval()  # turn on evaluation mode
+        for left, right, y in valid_dl:
+            preds = model([left, right])
+            loss = loss_func(preds, torch.unsqueeze(y, 1))
+            val_loss += loss.data.item()
 
-    model = get_deep_cross_model(
-        num_words + 1,
-        embedding_dim,
-        max_len,
-        matrix_similarity_function,
-        denses_depth=denses_depth,
-        activation=activation,
-        embedding_matrix=embedding_matrix,
-        embedding_trainable=embedding_trainable,
-        embedding_dropout=embedding_dropout,
-        rnn_type=rnn_type,
-        rnn_units=rnn_units,
-        convs_filter_banks=convs_filter_banks,
-        convs_kernel_size=convs_kernel_size,
-        pool_size=pool_size,
-        mlp_dropout=mlp_dropout,
-        set_tanh=set_tanh,
-        hidden_activation=hidden_activation
-    )
-    model.summary()
-    if optimizer is None:
-        optimizer = Adam(learning_rate=1e-4)
-    model.compile(optimizer, loss=loss, metrics=["accuracy"])
-
-    print("* TRAINING")
-    model.fit(
-        train_gen,
-        validation_data=val_gen,
-        epochs=epochs,
-        callbacks=callbacks_list,
-        verbose=verbosity,
-        class_weight=class_weights,
-    )
-    y_true = [v[1] for v in val_gen]
-    y_true = functools.reduce(operator.iconcat, y_true, [])
-    y_pred = model.predict(val_gen) > threshold
-
-    results = classification_report(y_true, y_pred, digits=3, output_dict=True)
-    results = [
-        results["accuracy"],
-        results["weighted avg"]["precision"],
-        results["weighted avg"]["recall"],
-        results["weighted avg"]["f1-score"],
-    ]
-    # results = [
-    #     accuracy_score(y_pred, y_true),
-    #     precision_score(y_pred, y_true, labels=[0, 1], average='weighted'),
-    #     recall_score(y_pred, y_true, labels=[0, 1], average='weighted'),
-    #     f1_score(y_pred, y_true, labels=[0, 1], average='weighted'),
-    # ]
-    print(f"* FINAL EVALUATION {results}")
-    return model, results
+        val_loss /= len(valid_dl)
+        print('Epoch: {}, Training Loss: {:.4f}, Validation Loss: {:.4f}'.format(epoch, epoch_loss,
+                                                                                 val_loss))
+    return model

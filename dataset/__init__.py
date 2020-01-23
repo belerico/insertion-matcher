@@ -4,7 +4,7 @@ import string
 import numpy as np
 import torch
 from nltk import word_tokenize
-from torchtext.data import Field, Dataset, Example
+from torchtext.data import Field, Dataset, Example, BucketIterator
 import numpy as np
 from pandas import pandas
 from nltk.corpus import stopwords
@@ -92,6 +92,22 @@ class SeriesExample(Example):
         return ex
 
 
+class BatchWrapper:
+    def __init__(self, dl, x_vars, y_var):
+        self.dl, self.x_vars, self.y_var = dl, x_vars, y_var  # we pass in the list of attributes for x
+
+    def __iter__(self):
+        for batch in self.dl:
+            left = getattr(batch, self.x_vars[0])  # we assume only one input in this wrapper
+            right = getattr(batch, self.x_vars[1])  # we assume only one input in this wrapper
+            y = torch.Tensor(list(map(float, getattr(batch, self.y_var))))
+
+            yield (left, right, y)
+
+    def __len__(self):
+        return len(self.dl)
+
+
 def get_data(train_path, valid_path, test_path):
     TEXT = Field(sequential=True, tokenize=preprocess, lower=True, fix_length=20, batch_first=True)
     LABEL = Field(sequential=False, use_vocab=False, is_target=True, batch_first=True)
@@ -136,21 +152,28 @@ def get_data(train_path, valid_path, test_path):
     train_ds = DataFrameDataset(train, fields)
     valid_ds = DataFrameDataset(valid, fields)
     test_ds = DataFrameDataset(test, fields)
+    TEXT.build_vocab(train_ds, valid_ds)
+    print(train_ds[0].title_left)
+    print(valid_ds[0].title_left)
+    print(test_ds[0].title_left)
 
     return train_ds, valid_ds, test_ds, TEXT,
 
 
-class BatchWrapper:
-    def __init__(self, dl, x_vars, y_var):
-        self.dl, self.x_vars, self.y_var = dl, x_vars, y_var  # we pass in the list of attributes for x
+def get_iterators(train_ds, valid_ds, test_ds):
+    train_iter, val_iter, test_iter = BucketIterator.splits(
+        (train_ds, valid_ds, test_ds),
+        # we pass in the datasets we want the iterator to draw data from
+        batch_sizes=(32, 64, 64),
+        device=torch.device('cpu'),  # if you want to use the GPU, specify the GPU number here
+        sort_key=lambda x: min(max(len(x.title_left), len(x.title_right)), 20),
+        # the BucketIterator needs to be told what function it should use to group the data.
+        sort_within_batch=True,
+        shuffle=True,
+        repeat=False  # we pass repeat=False because we want to wrap this Iterator layer.
+    )
 
-    def __iter__(self):
-        for batch in self.dl:
-            left = getattr(batch, self.x_vars[0])  # we assume only one input in this wrapper
-            right = getattr(batch, self.x_vars[1])  # we assume only one input in this wrapper
-            y = torch.Tensor(list(map(float, getattr(batch, self.y_var))))
-
-            yield (left, right, y)
-
-    def __len__(self):
-        return len(self.dl)
+    train_dl = BatchWrapper(train_iter, ['title_left', 'title_right'], 'label')
+    valid_dl = BatchWrapper(val_iter, ['title_left', 'title_right'], 'label')
+    test_dl = BatchWrapper(test_iter, ['title_left', 'title_right'], 'label')
+    return train_dl, valid_dl, test_dl
