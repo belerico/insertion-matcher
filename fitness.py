@@ -21,7 +21,7 @@ def fit(
     exp_dir,
     early_stopping_after,
     denses_depth,
-    activation="sigmoid",
+    activation="tanh",
     embedding_matrix=None,
     embedding_trainable=False,
     embedding_dropout=0.3,
@@ -37,6 +37,9 @@ def fit(
     class_weights=None,
     optimizer=None,
     threshold=0.5,
+    set_tanh=True,
+    hidden_activation='relu',
+    loss='binary_crossentropy'
 ):
     graph_base_dir = os.path.join(exp_dir, "graph")
     checkpoint_base_dir = os.path.join(exp_dir, "checkpoint")
@@ -65,12 +68,11 @@ def fit(
         cb_stop = keras.callbacks.EarlyStopping(
             "val_loss",
             patience=early_stopping_after,
-            mode="max",
+            mode="min",
             restore_best_weights=True,
         )
-
         cb_csv = keras.callbacks.CSVLogger(csv_path)
-        callbacks_list = [cb_tb, cb_stop, cb_csv, cb_best]
+        callbacks_list = [cb_stop]
 
     model = get_deep_cross_model(
         num_words + 1,
@@ -88,11 +90,13 @@ def fit(
         convs_kernel_size=convs_kernel_size,
         pool_size=pool_size,
         mlp_dropout=mlp_dropout,
+        set_tanh=set_tanh,
+        hidden_activation=hidden_activation
     )
     model.summary()
     if optimizer is None:
         optimizer = Adam(learning_rate=1e-4)
-    model.compile(optimizer, loss="binary_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer, loss=loss, metrics=["accuracy"])
 
     print("* TRAINING")
     model.fit(

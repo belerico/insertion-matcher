@@ -36,21 +36,23 @@ def Tanh():
 
 
 def get_deep_cross_model(
-    vocab_size,
-    embedding_dimension,
-    vec_dimension,
-    matrix_similarity_function,
-    denses_depth,
-    activation,
-    embedding_matrix=None,
-    embedding_trainable=False,
-    embedding_dropout=0.3,
-    rnn_type="LSTM",
-    rnn_units=100,
-    convs_filter_banks=8,
-    convs_kernel_size=2,
-    pool_size=2,
-    mlp_dropout=0.3,
+        vocab_size,
+        embedding_dimension,
+        vec_dimension,
+        matrix_similarity_function,
+        denses_depth,
+        activation,
+        embedding_matrix=None,
+        embedding_trainable=False,
+        embedding_dropout=0.3,
+        rnn_type="LSTM",
+        rnn_units=100,
+        convs_filter_banks=8,
+        convs_kernel_size=2,
+        pool_size=2,
+        mlp_dropout=0.3,
+        set_tanh=True,
+        hidden_activation='relu'
 ):
     left_input = Input((vec_dimension,))
     right_input = Input((vec_dimension,))
@@ -100,19 +102,20 @@ def get_deep_cross_model(
 
     x = gen_interaction_matrix(matrix_similarity_function)([bi_left, bi_right])
 
-    x = Conv2D(convs_filter_banks, convs_kernel_size, activation="relu")(x)
+    x = Conv2D(convs_filter_banks, convs_kernel_size, activation=hidden_activation)(x)
     x = BatchNormalization()(x)
     x = MaxPool2D(pool_size=pool_size)(x)
 
     x = Flatten()(x)
-    x = Tanh()(x)
+    if set_tanh:
+        x = Tanh()(x)
 
     for i in range(denses_depth):
-        denses_units = 16 * 2**(denses_depth - i - 1)
-        x = Dense(denses_units, activation="relu")(x)
+        denses_units = 16 * 2 ** (denses_depth - i - 1)
+        x = Dense(denses_units, activation=hidden_activation)(x)
         if mlp_dropout:
             x = Dropout(mlp_dropout)(x)
-            
+
     output = Dense(1, activation=activation)(x)
 
     model = Model(inputs=[left_input, right_input], outputs=[output])

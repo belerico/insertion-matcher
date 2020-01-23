@@ -50,7 +50,8 @@ def parse_content_line(x, attributes=None, label=True):
     item = json.loads(x)
     elements = [item[attr] if item[attr] is not None else '' for attr in attributes]
     if label:
-        elements.append(int(item["label"]))
+        ll = int(item["label"])
+        elements.append(ll)
     item = np.array(elements)
     return item[np.newaxis, :]
 
