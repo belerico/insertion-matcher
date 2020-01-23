@@ -6,11 +6,12 @@ from sklearn.metrics import classification_report
 from torch import optim as optim, nn as nn
 
 from models import Model
+import time
 
 
-def fit(TEXT, train_dl, valid_dl, config, hidden_dim=100, emb_dim=100, lr=1e-3, loss='BCELoss'):
-    model = Model(TEXT, hidden_dim=hidden_dim, emb_dim=emb_dim)
-
+def fit(TEXT, train_dl, valid_dl, config, conv_depth, dense_depth, hidden_dim=100, lr=1e-3,
+        loss='BCELoss'):
+    model = Model(TEXT, hidden_dim=hidden_dim, conv_depth=conv_depth, dense_depth=dense_depth)
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_func = getattr(nn, loss)()
     model.train()
@@ -18,7 +19,7 @@ def fit(TEXT, train_dl, valid_dl, config, hidden_dim=100, emb_dim=100, lr=1e-3, 
     print("Start training")
     for epoch in range(1, config['epochs'] + 1):
         running_loss = 0.0
-
+        t0 = time.time()
         for left, right, y in train_dl:
             opt.zero_grad()
             preds = model([left, right])
@@ -38,8 +39,10 @@ def fit(TEXT, train_dl, valid_dl, config, hidden_dim=100, emb_dim=100, lr=1e-3, 
             val_loss += loss.data.item()
 
         val_loss /= len(valid_dl)
-        print('Epoch: {}, Training Loss: {:.4f}, Validation Loss: {:.4f}'.format(epoch, epoch_loss,
-                                                                                 val_loss))
+        print('Epoch: {}, Elapsed: {:.2f}, Training Loss: {:.4f}, Validation Loss: {:.4f}'.format(
+            epoch, time.time() - t0,
+            epoch_loss,
+            val_loss))
     return model
 
 

@@ -4,9 +4,14 @@ from torch.nn import functional as F
 
 
 class Model(nn.Module):
-    def __init__(self, TEXT, hidden_dim, emb_dim=50, conv_depth=16, kernel_size=3, pool_size=2):
+    def __init__(self, TEXT, hidden_dim, conv_depth=16, kernel_size=3, pool_size=2,
+                 dense_depth=32, max_len=20):
         super().__init__()
-        self.embedding = nn.Embedding.from_pretrained(TEXT.vocab.vectors)
+        embedding_matrix = TEXT.vocab.vectors
+        emb_dim = embedding_matrix.size()[1]
+
+        self.embedding = nn.Embedding.from_pretrained(embedding_matrix)
+
         self.encoder_left = nn.LSTM(emb_dim, hidden_dim, num_layers=1, bidirectional=False,
                                     batch_first=True)
         self.encoder_right = nn.LSTM(emb_dim, hidden_dim, num_layers=1, bidirectional=False,
@@ -14,9 +19,11 @@ class Model(nn.Module):
 
         self.conv1 = nn.Conv2d(1, conv_depth, kernel_size)
         self.batch_norm1 = nn.BatchNorm2d(conv_depth)
+
+        output_size = int((((max_len - 2) / 2) ** 2) * conv_depth)
         self.max_pool1 = nn.MaxPool2d(pool_size)
-        self.mlp1 = nn.Linear(1296, 32)
-        self.mlp2 = nn.Linear(32, 16)
+        self.mlp1 = nn.Linear(output_size, dense_depth)
+        self.mlp2 = nn.Linear(dense_depth, 16)
         self.out = nn.Linear(16, 1)
         self.sigmoid = nn.Sigmoid()
 
@@ -30,7 +37,6 @@ class Model(nn.Module):
         x = self.batch_norm1(x)
         x = self.max_pool1(x)
         x = torch.flatten(x, start_dim=1)
-        x = torch.tanh(x)
         x = self.mlp1(x)
         x = F.relu(x)
         x = F.dropout(x, 0.3)
