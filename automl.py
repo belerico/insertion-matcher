@@ -91,7 +91,7 @@ if __name__ == '__main__':
         'test_path': "./dataset/computers/test/computers_gs.json",
         'embedding_path':
             './dataset/embeddings/w2v/new_w2v_title_300Epochs_1MinCount_9ContextWindow_100d.bin',
-        'epochs': 1
+        'epochs': 10
     }
 
     # ### ExpectedImprovement
@@ -99,18 +99,18 @@ if __name__ == '__main__':
     furtherEvaluations = 10
 
     param = {
-        'lr': ('cont', [0.00001, 1.0]),
-        'rnn_units': ('int', [150, 250]),
+        'lr': ('cont', [1e-4, 1.0]),
+        'rnn_units': ('int', [100, 250]),
+        'convs_filter_banks': ('int', [4, 32]),
+        'denses_depth': ('int', [16, 128]),
         'similarity_type': ('int', [0, 1]),
-        'convs_filter_banks': ('int', [4, 64]),
-        'denses_depth': ('int', [1, 6]),
     }
 
     init_rand_configs = [{
-        'lr': 0.0001,
-        'rnn_units': 200,
+        'lr': 1e-3,
+        'rnn_units': 100,
         'convs_filter_banks': 32,
-        'denses_depth': 3,
+        'denses_depth': 16,
         'similarity_type': 0
     }]
 
