@@ -1,11 +1,14 @@
+import functools
+import operator
+
 import torch
+from sklearn.metrics import classification_report
 from torch import optim as optim, nn as nn
 
 from models import Model
-from pytorch_main import config
 
 
-def fit(TEXT, train_dl, valid_dl, hidden_dim=100, emb_dim=100, lr=1e-3, loss='BCELoss'):
+def fit(TEXT, train_dl, valid_dl, config, hidden_dim=100, emb_dim=100, lr=1e-3, loss='BCELoss'):
     model = Model(TEXT, hidden_dim=hidden_dim, emb_dim=emb_dim)
 
     opt = optim.Adam(model.parameters(), lr=lr)
@@ -38,3 +41,14 @@ def fit(TEXT, train_dl, valid_dl, hidden_dim=100, emb_dim=100, lr=1e-3, loss='BC
         print('Epoch: {}, Training Loss: {:.4f}, Validation Loss: {:.4f}'.format(epoch, epoch_loss,
                                                                                  val_loss))
     return model
+
+
+def evaluate(model, test_dl):
+    y_true = [v[2] for v in test_dl]
+    y_true = functools.reduce(operator.iconcat, y_true, [])
+    predictions = []
+    model.eval()  # turn on evaluation mode
+    for left, right, y in test_dl:
+        preds = model([left, right])
+        predictions.extend(preds.data > .5)
+    print(classification_report(y_true, predictions))

@@ -1,9 +1,6 @@
-import functools
-import operator
-from sklearn.metrics import classification_report
 from dataset import get_data, get_iterators
 
-from fitness import fit
+from fitness import fit, evaluate
 from utils import load_embedding
 
 if __name__ == '__main__':
@@ -20,13 +17,6 @@ if __name__ == '__main__':
     train_dl, valid_dl, test_dl = get_iterators(train_ds, valid_ds, test_ds)
     load_embedding(TEXT, config['embedding_path'])
 
-    model = fit(TEXT, train_dl, valid_dl, hidden_dim=100, emb_dim=100, lr=1e-3, loss='BCELoss')
-
-    y_true = [v[2] for v in test_dl]
-    y_true = functools.reduce(operator.iconcat, y_true, [])
-    predictions = []
-    model.eval()  # turn on evaluation mode
-    for left, right, y in test_dl:
-        preds = model([left, right])
-        predictions.extend(preds.data > .5)
-    print(classification_report(y_true, predictions))
+    model = fit(TEXT, train_dl, valid_dl, config=config, hidden_dim=200, emb_dim=100, lr=1e-3,
+                loss='BCELoss')
+    evaluate(model, test_dl)
