@@ -114,13 +114,13 @@ def get_fitness_for_automl(config):
 
 if __name__ == "__main__":
     config = {
-        "expname": "fasttext_20Epochs_200d_CrossEntropy_BothDenses",
+        "expname": "fasttext_10Epochs_100d_CrossEntropy_BothDenses",
         "train_path": "./dataset/computers/train/computers_splitted_train_medium.json",
         "valid_path": "./dataset/computers/valid/computers_splitted_valid_medium.json",
         "test_path": "./dataset/computers/test/computers_gs.json",
-        "embedding_path": "./dataset/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_200d"
+        "embedding_path": "./dataset/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d"
         ".txt",
-        "epochs": 20,
+        "epochs": 10,
     }
 
     # ### ExpectedImprovement
@@ -129,18 +129,18 @@ if __name__ == "__main__":
 
     param = {
         "lr": ("cont", [1e-6, 1e-3]),
-        "rnn_units": ("int", [50, 250]),
-        "convs_filter_banks": ("int", [4, 64]),
-        "convs_kernel_size": ("int", [2, 3]),
-        "dense_depth1": ("int", [16, 128]),
-        "dense_depth2": ("int", [16, 128]),
-        "similarity_type": ("int", [0, 1]),
+        "rnn_units": ("int", [50, 251]),
+        "convs_filter_banks": ("int", [4, 65]),
+        "convs_kernel_size": ("int", [2, 4]),
+        "dense_depth1": ("int", [16, 129]),
+        "dense_depth2": ("int", [16, 129]),
+        "similarity_type": ("int", [0, 2]),
     }
 
     init_rand_configs = [
         {
             "lr": 1e-3,
-            "rnn_units": 200,
+            "rnn_units": 100,
             "convs_filter_banks": 32,
             "convs_kernel_size": 3,
             "dense_depth1": 32,
@@ -168,5 +168,5 @@ if __name__ == "__main__":
 
     import pickle
 
-    with open(f'dataset/exps/{config["expname"]}.pickle', "wb") as handle:
+    with open(f'data/exps/{config["expname"]}.pickle', "wb") as handle:
         pickle.dump(bo_step1_expected.history, handle, protocol=pickle.HIGHEST_PROTOCOL)

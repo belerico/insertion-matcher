@@ -5,8 +5,8 @@ import pickle
 
 if __name__ == "__main__":
     config = {
-        "embedding_path": "./dataset/embeddings/w2v/w2v_title_300Epochs_1MinCount_9ContextWindow_100d.txt",
-        "epochs": 15,
+        "embedding_path": "./dataset/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d.txt",
+        "epochs": 30,
         "lr": 1e-03,
         "rnn_units": 100,
         "convs_filter_banks": 32,
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         "denses_depth1": 32,
         "denses_depth2": 16,
         "similarity_type": "dot",
-        "automl_path": None,
+        "automl_path": './data/exps/fasttext_10Epochs_100d_CrossEntropy_BothDenses.pickle',
     }
 
     if config["automl_path"]:
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         print(config)
 
     train_ds, valid_ds, test_ds, TEXT = get_data(
-        train_path="./dataset/computers/train/computers_splitted_train_medium.json",
+        train_path="./dataset/computers/train/computers_train_splitted_medium.json",
         valid_path="./dataset/computers/valid/computers_splitted_valid_medium.json",
         test_path="./dataset/computers/test/computers_gs.json",
     )
@@ -59,5 +59,6 @@ if __name__ == "__main__":
         similarity="dot",
         loss="CrossEntropyLoss",
         validate_each_epoch=True,
+        trainable=True
     )
     evaluate(model, test_dl, print_results=True)
