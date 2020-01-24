@@ -5,7 +5,7 @@ import pickle
 
 if __name__ == "__main__":
     config = {
-        "embedding_path": "./dataset/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d.txt",
+        "embedding_path": "./dataset/embeddings/w2v/w2v_title_300Epochs_1MinCount_9ContextWindow_100d.txt",
         "epochs": 30,
         "lr": 1e-03,
         "rnn_units": 100,
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         "denses_depth1": 32,
         "denses_depth2": 16,
         "similarity_type": "dot",
-        "automl_path": './data/exps/fasttext_10Epochs_100d_CrossEntropy_BothDenses.pickle',
+        "automl_path": './exps/w2v_10Epochs_100d_CrossEntropy_BothDenses.pickle',
     }
 
     if config["automl_path"]:
