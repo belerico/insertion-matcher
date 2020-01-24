@@ -98,12 +98,12 @@ def get_fitness_for_automl(config):
 
 if __name__ == "__main__":
     config = {
-        'expname': 'test',
+        'expname': 'fasttext_150',
         'train_path': './data/computers/train/computers_splitted_train_medium.json',
         'valid_path': './data/computers/valid/computers_splitted_valid_medium.json',
         'test_path': "./data/computers/test/computers_gs.json",
         'embedding_path':
-            './data/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d'
+            './data/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_150d'
             '.txt',
         'epochs': 10
     }

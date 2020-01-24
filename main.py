@@ -6,14 +6,15 @@ import pickle
 if __name__ == "__main__":
     config = {
         'embedding_path':
-            './data/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d.txt',
-        'epochs': 50,
+            './data/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_150d'
+            '.txt',
+        'epochs': 30,
         'lr': 1e-03,
         'rnn_units': 200,
         'convs_filter_banks': 32,
         'denses_depth': 32,
         'similarity_type': 'dot',
-        'automl_path': 'data/exps/fasttext_100d.pickle',
+        'automl_path': None,
         'rnn_step': 50,
         'conv_step': 8,
         'dense_step': 16
