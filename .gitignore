@@ -1,11 +1,10 @@
 # Byte-compiled / optimized / DLL files
 .txt
 .DS_STORE
-.vscode
+.vscode/*
 __pycache__/
 *.py[cod]
 *$py.class
-
 # C extensions
 *.so
 data/*
@@ -131,3 +130,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+.vector_cache

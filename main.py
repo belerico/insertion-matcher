@@ -6,7 +6,7 @@ import pickle
 if __name__ == '__main__':
     config = {
         'embedding_path':
-            './dataset/embeddings/w2v'
+            './data/embeddings/w2v'
             '/new_w2v_title_300Epochs_1MinCount_9ContextWindow_100d'
             '.bin',
         'epochs': 30,
