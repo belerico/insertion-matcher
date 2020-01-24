@@ -8,7 +8,7 @@ from pyGPGO.acquisition import Acquisition
 
 from dataset import get_data, get_iterators
 from fitness import fit, evaluate
-from utils import load_embedding, resave_w2v_model
+from utils import load_embedding
 
 
 def myFirstRun(self, init_rand_configs=None, n_eval=3):
@@ -104,13 +104,14 @@ def get_fitness_for_automl(config):
 
 if __name__ == "__main__":
     config = {
-        "expname": "test",
-        "train_path": "./dataset/computers/train/computers_splitted_train_medium.json",
-        "valid_path": "./dataset/computers/valid/computers_splitted_valid_medium.json",
-        "test_path": "./dataset/computers/test/computers_gs.json",
-        "embedding_path": "./dataset/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d"
-        ".txt",
-        "epochs": 10,
+        'expname': 'test',
+        'train_path': './data/computers/train/computers_splitted_train_medium.json',
+        'valid_path': './data/computers/valid/computers_splitted_valid_medium.json',
+        'test_path': "./data/computers/test/computers_gs.json",
+        'embedding_path':
+            './data/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d'
+            '.txt',
+        'epochs': 10
     }
 
     # ### ExpectedImprovement
