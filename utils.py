@@ -1,15 +1,13 @@
 import os
 import re
 import json
-
+import fasttext
 import gensim
-import spacy
 import numpy as np
 import string
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 from torchtext.vocab import Vectors
-
 
 english_stopwords = set(stopwords.words("english"))
 non_alphanum_regex = re.compile(r'\W+')
@@ -56,8 +54,12 @@ def resave_w2v_model(old_path, new_path):
     w2v_model.save_word2vec_format(fname=new_path)
 
 
-def load_embedding(TEXT, embedding_path):
+def resave_fasttext_model(old_path, new_path):
+    fasttext_model = gensim.models.fasttext.load_facebook_model(old_path)
+    fasttext_model.save(fname=new_path)
 
+
+def load_embedding(TEXT, embedding_path):
     embedding_name = os.path.basename(embedding_path)
     embedding_dir = os.path.dirname(embedding_path)
     vectors = Vectors(name=embedding_name,

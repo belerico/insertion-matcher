@@ -8,9 +8,11 @@ import time
 
 
 def fit(TEXT, train_dl, valid_dl, config, conv_depth, dense_depth, hidden_dim=100, lr=1e-3,
-        kernel_size=3, pool_size=2, similarity='dot', loss='BCELoss', validate_each_epoch=True):
+        kernel_size=3, pool_size=2, similarity='dot', loss='BCELoss', validate_each_epoch=True,
+        trainable=False):
     model = Model(TEXT, hidden_dim=hidden_dim, conv_depth=conv_depth, dense_depth=dense_depth,
-                  similarity=similarity, max_len=20, kernel_size=kernel_size, pool_size=pool_size)
+                  similarity=similarity, max_len=20, kernel_size=kernel_size, pool_size=pool_size,
+                  trainable=trainable)
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_func = getattr(nn, loss)()
     model.train()
@@ -28,7 +30,7 @@ def fit(TEXT, train_dl, valid_dl, config, conv_depth, dense_depth, hidden_dim=10
             running_loss += loss.data.item()
 
         epoch_loss = running_loss / len(train_dl)
-        print('Epoch: {}, Elapsed: {:.2f}, Training Loss: {:.4f}'.format(
+        print('Epoch: {}, Elapsed: {:.2f}s, Training Loss: {:.4f}'.format(
             epoch, time.time() - t0,
             epoch_loss))
 

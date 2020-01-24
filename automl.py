@@ -8,7 +8,7 @@ from pyGPGO.acquisition import Acquisition
 
 from dataset import get_data, get_iterators
 from fitness import fit, evaluate
-from utils import load_embedding
+from utils import load_embedding, resave_w2v_model
 
 
 def myFirstRun(self, init_rand_configs=None, n_eval=3):
@@ -90,20 +90,23 @@ if __name__ == '__main__':
         'valid_path': './dataset/computers/valid/computers_splitted_valid_medium.json',
         'test_path': "./dataset/computers/test/computers_gs.json",
         'embedding_path':
-            './dataset/embeddings/w2v/new_w2v_title_300Epochs_1MinCount_9ContextWindow_100d.bin',
+            './dataset/embeddings/w2v/new_w2v_title_300Epochs_1MinCount_9ContextWindow_200d.bin',
         'epochs': 10
     }
+    resave_w2v_model(
+        './dataset/embeddings/w2v/w2v_title_300Epochs_1MinCount_9ContextWindow_200d.bin',
+        config['embedding_path'])
 
     # ### ExpectedImprovement
 
     furtherEvaluations = 10
 
     param = {
-        'lr': ('cont', [1e-4, 1.0]),
+        'lr': ('cont', [1e-5, 1e-2]),
         'rnn_units': ('int', [100, 250]),
         'convs_filter_banks': ('int', [4, 32]),
         'denses_depth': ('int', [16, 128]),
-        'similarity_type': ('int', [0, 1]),
+        'similarity_type': ('int', [0, 2]),
     }
 
     init_rand_configs = [{

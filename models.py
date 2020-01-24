@@ -5,13 +5,14 @@ from torch.nn import functional as F
 
 class Model(nn.Module):
     def __init__(self, TEXT, hidden_dim, conv_depth, kernel_size, pool_size,
-                 dense_depth, max_len, similarity):
+                 dense_depth, max_len, similarity, trainable):
         super().__init__()
         embedding_matrix = TEXT.vocab.vectors
         emb_dim = embedding_matrix.size()[1]
 
         self.similarity = similarity
         self.embedding = nn.Embedding.from_pretrained(embedding_matrix)
+        self.embedding.requires_grad = trainable
 
         self.encoder_left = nn.LSTM(emb_dim, hidden_dim, num_layers=1, bidirectional=False,
                                     batch_first=True)
