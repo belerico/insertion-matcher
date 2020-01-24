@@ -8,7 +8,7 @@ from pyGPGO.acquisition import Acquisition
 
 from dataset import get_data, get_iterators
 from fitness import fit, evaluate
-from utils import load_embedding, resave_w2v_model
+from utils import load_embedding
 
 
 def myFirstRun(self, init_rand_configs=None, n_eval=3):

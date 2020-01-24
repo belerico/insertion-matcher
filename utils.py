@@ -1,7 +1,6 @@
 import os
 import re
 import json
-import fasttext
 import gensim
 import numpy as np
 import string
