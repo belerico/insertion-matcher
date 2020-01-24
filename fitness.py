@@ -101,13 +101,14 @@ def fit(
     valid_dl,
     config,
     conv_depth,
-    dense_depth,
+    dense_depth1,
+    dense_depth2,
     hidden_dim=100,
     lr=1e-3,
     kernel_size=3,
     pool_size=2,
     similarity="dot",
-    loss="BCELoss",
+    loss="CrossEntropyLoss",
     validate_each_epoch=True,
     trainable=False,
 ):
@@ -115,12 +116,13 @@ def fit(
         TEXT,
         hidden_dim=hidden_dim,
         conv_depth=conv_depth,
-        dense_depth=dense_depth,
-        similarity=similarity,
-        max_len=20,
         kernel_size=kernel_size,
         pool_size=pool_size,
-        trainable=trainable,
+        dense_depth1=dense_depth1,
+        dense_depth2=dense_depth2,
+        max_len=20,
+        similarity=similarity,
+        trainable=trainable
     )
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_func = getattr(nn, loss)()

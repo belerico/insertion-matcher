@@ -79,7 +79,15 @@ def get_fitness_for_automl(config):
     train_dl, valid_dl, test_dl = get_iterators(train_ds, valid_ds, test_ds)
     load_embedding(TEXT, config["embedding_path"])
 
-    def fitness(denses_depth, lr, convs_filter_banks, rnn_units, similarity_type):
+    def fitness(
+        dense_depth1,
+        dense_depth2,
+        lr,
+        convs_filter_banks,
+        convs_kernel_size,
+        rnn_units,
+        similarity_type,
+    ):
         similarity_type = "dot" if similarity_type == 0 else "cosine"
 
         model = fit(
@@ -87,13 +95,14 @@ def get_fitness_for_automl(config):
             train_dl,
             valid_dl,
             config=config,
+            conv_depth=convs_filter_banks,
+            dense_depth1=dense_depth1,
+            dense_depth2=dense_depth2,
             hidden_dim=rnn_units,
             lr=lr,
-            conv_depth=convs_filter_banks,
-            loss="BCELoss",
-            dense_depth=denses_depth,
-            validate_each_epoch=False,
             similarity=similarity_type,
+            loss="CrossEntropyLoss",
+            validate_each_epoch=True,
         )
 
         result = evaluate(model, valid_dl, print_results=False)
@@ -104,14 +113,13 @@ def get_fitness_for_automl(config):
 
 if __name__ == "__main__":
     config = {
-        'expname': 'test',
-        'train_path': './data/computers/train/computers_splitted_train_medium.json',
-        'valid_path': './data/computers/valid/computers_splitted_valid_medium.json',
-        'test_path': "./data/computers/test/computers_gs.json",
-        'embedding_path':
-            './data/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d'
-            '.txt',
-        'epochs': 10
+        "expname": "fasttext_20Epochs_200d_CrossEntropy_BothDenses",
+        "train_path": "./dataset/computers/train/computers_splitted_train_medium.json",
+        "valid_path": "./dataset/computers/valid/computers_splitted_valid_medium.json",
+        "test_path": "./dataset/computers/test/computers_gs.json",
+        "embedding_path": "./dataset/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_200d"
+        ".txt",
+        "epochs": 20,
     }
 
     # ### ExpectedImprovement
@@ -119,19 +127,23 @@ if __name__ == "__main__":
     furtherEvaluations = 10
 
     param = {
-        "lr": ("cont", [1e-5, 1e-2]),
-        "rnn_units": ("int", [100, 250]),
-        "convs_filter_banks": ("int", [4, 32]),
-        "denses_depth": ("int", [16, 128]),
-        "similarity_type": ("int", [0, 2]),
+        "lr": ("cont", [1e-6, 1e-2]),
+        "rnn_units": ("int", [150, 250]),
+        "convs_filter_banks": ("int", [4, 64]),
+        "convs_kernel_size": ("int", [2, 3]),
+        "dense_depth1": ("int", [16, 128]),
+        "dense_depth2": ("int", [16, 128]),
+        "similarity_type": ("int", [0, 1]),
     }
 
     init_rand_configs = [
         {
             "lr": 1e-3,
-            "rnn_units": 100,
+            "rnn_units": 200,
             "convs_filter_banks": 32,
-            "denses_depth": 16,
+            "convs_kernel_size": 3,
+            'dense_depth1': 32,
+            'dense_depth2': 16,
             "similarity_type": 0,
         }
     ]
@@ -155,5 +167,5 @@ if __name__ == "__main__":
 
     import pickle
 
-    with open(f'data/exps/{config["expname"]}.pickle', "wb") as handle:
+    with open(f'dataset/exps/{config["expname"]}.pickle', "wb") as handle:
         pickle.dump(bo_step1_expected.history, handle, protocol=pickle.HIGHEST_PROTOCOL)

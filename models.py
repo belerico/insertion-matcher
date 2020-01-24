@@ -81,7 +81,8 @@ class Model(nn.Module):
         conv_depth,
         kernel_size,
         pool_size,
-        dense_depth,
+        dense_depth1,
+        dense_depth2,
         max_len,
         similarity,
         trainable,
@@ -105,9 +106,9 @@ class Model(nn.Module):
         self.batch_norm1 = nn.BatchNorm2d(conv_depth)
         output_size = int((((max_len - 2) / 2) ** 2) * conv_depth)
         self.max_pool1 = nn.MaxPool2d(pool_size)
-        self.mlp1 = nn.Linear(output_size, dense_depth)
-        self.mlp2 = nn.Linear(dense_depth, 16)
-        self.out = nn.Linear(16, 2)
+        self.mlp1 = nn.Linear(output_size, dense_depth1)
+        self.mlp2 = nn.Linear(dense_depth1, dense_depth2)
+        self.out = nn.Linear(dense_depth2, 2)
 
     def forward(self, seq):
         hdn_left, _ = self.encoder_left(self.embedding(seq[0]))
