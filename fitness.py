@@ -100,12 +100,12 @@ def fit(
     train_dl,
     valid_dl,
     config,
+    hidden_dim,
     conv_depth,
+    kernel_size,
     dense_depth1,
     dense_depth2,
-    hidden_dim=100,
     lr=1e-3,
-    kernel_size=3,
     pool_size=2,
     similarity="dot",
     loss="CrossEntropyLoss",
@@ -122,7 +122,7 @@ def fit(
         dense_depth2=dense_depth2,
         max_len=20,
         similarity=similarity,
-        trainable=trainable
+        trainable=trainable,
     )
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_func = getattr(nn, loss)()

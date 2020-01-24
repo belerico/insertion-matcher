@@ -80,12 +80,12 @@ def get_fitness_for_automl(config):
     load_embedding(TEXT, config["embedding_path"])
 
     def fitness(
-        dense_depth1,
-        dense_depth2,
         lr,
+        rnn_units,
         convs_filter_banks,
         convs_kernel_size,
-        rnn_units,
+        dense_depth1,
+        dense_depth2,
         similarity_type,
     ):
         similarity_type = "dot" if similarity_type == 0 else "cosine"
@@ -95,10 +95,11 @@ def get_fitness_for_automl(config):
             train_dl,
             valid_dl,
             config=config,
+            hidden_dim=rnn_units,
             conv_depth=convs_filter_banks,
+            kernel_size=convs_kernel_size,
             dense_depth1=dense_depth1,
             dense_depth2=dense_depth2,
-            hidden_dim=rnn_units,
             lr=lr,
             similarity=similarity_type,
             loss="CrossEntropyLoss",
@@ -127,8 +128,8 @@ if __name__ == "__main__":
     furtherEvaluations = 10
 
     param = {
-        "lr": ("cont", [1e-6, 1e-2]),
-        "rnn_units": ("int", [150, 250]),
+        "lr": ("cont", [1e-6, 1e-3]),
+        "rnn_units": ("int", [50, 250]),
         "convs_filter_banks": ("int", [4, 64]),
         "convs_kernel_size": ("int", [2, 3]),
         "dense_depth1": ("int", [16, 128]),
@@ -142,8 +143,8 @@ if __name__ == "__main__":
             "rnn_units": 200,
             "convs_filter_banks": 32,
             "convs_kernel_size": 3,
-            'dense_depth1': 32,
-            'dense_depth2': 16,
+            "dense_depth1": 32,
+            "dense_depth2": 16,
             "similarity_type": 0,
         }
     ]

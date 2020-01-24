@@ -1,3 +1,4 @@
+import math
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
@@ -73,6 +74,7 @@ from torch.nn import functional as F
         x = self.sigmoid(x)
         return x """
 
+
 class Model(nn.Module):
     def __init__(
         self,
@@ -104,7 +106,7 @@ class Model(nn.Module):
 
         self.conv1 = nn.Conv2d(1, conv_depth, kernel_size)
         self.batch_norm1 = nn.BatchNorm2d(conv_depth)
-        output_size = int((((max_len - 2) / 2) ** 2) * conv_depth)
+        output_size = (math.floor((max_len - kernel_size + 1) / 2) ** 2) * conv_depth
         self.max_pool1 = nn.MaxPool2d(pool_size)
         self.mlp1 = nn.Linear(output_size, dense_depth1)
         self.mlp2 = nn.Linear(dense_depth1, dense_depth2)
