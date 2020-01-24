@@ -80,21 +80,15 @@ def get_fitness_for_automl(config):
     load_embedding(TEXT, config["embedding_path"])
 
     def fitness(denses_depth, lr, convs_filter_banks, rnn_units, similarity_type):
-        similarity_type = "dot" if similarity_type == 0 else "cosine"
+        similarity_type = 'dot' if similarity_type == 0 else 'cosine'
 
-        model = fit(
-            TEXT,
-            train_dl,
-            valid_dl,
-            config=config,
-            hidden_dim=rnn_units,
-            lr=lr,
-            conv_depth=convs_filter_banks,
-            loss="BCELoss",
-            dense_depth=denses_depth,
-            validate_each_epoch=False,
-            similarity=similarity_type,
-        )
+        rnn_units = rnn_units * 50
+        convs_filter_banks = convs_filter_banks * 8
+        denses_depth = 16 * denses_depth
+
+        model = fit(TEXT, train_dl, valid_dl, config=config, hidden_dim=rnn_units, lr=lr,
+                    conv_depth=convs_filter_banks, loss='CrossEntropyLoss', dense_depth=denses_depth,
+                    validate_each_epoch=False, similarity=similarity_type)
 
         result = evaluate(model, valid_dl, print_results=False)
         return result
@@ -119,19 +113,20 @@ if __name__ == "__main__":
     furtherEvaluations = 10
 
     param = {
-        "lr": ("cont", [1e-5, 1e-2]),
-        "rnn_units": ("int", [100, 250]),
-        "convs_filter_banks": ("int", [4, 32]),
-        "denses_depth": ("int", [16, 128]),
-        "similarity_type": ("int", [0, 2]),
+
+        'lr': ('cont', [1e-5, 1e-2]),
+        'rnn_units': ('int', [1, 6]),
+        'convs_filter_banks': ('int', [1, 8]),
+        'denses_depth': ('int', [1, 10]),
+        'similarity_type': ('int', [0, 2]),
     }
 
     init_rand_configs = [
         {
             "lr": 1e-3,
-            "rnn_units": 100,
-            "convs_filter_banks": 32,
-            "denses_depth": 16,
+            "rnn_units": 2,
+            "convs_filter_banks": 2,
+            "denses_depth": 2,
             "similarity_type": 0,
         }
     ]
