@@ -90,12 +90,10 @@ if __name__ == '__main__':
         'valid_path': './dataset/computers/valid/computers_splitted_valid_medium.json',
         'test_path': "./dataset/computers/test/computers_gs.json",
         'embedding_path':
-            './dataset/embeddings/w2v/new_w2v_title_300Epochs_1MinCount_9ContextWindow_200d.bin',
+            './dataset/embeddings/fasttext/fasttext_title_300Epochs_1MinCount_9ContextWindow_100d'
+            '.txt',
         'epochs': 10
     }
-    resave_w2v_model(
-        './dataset/embeddings/w2v/w2v_title_300Epochs_1MinCount_9ContextWindow_200d.bin',
-        config['embedding_path'])
 
     # ### ExpectedImprovement
 

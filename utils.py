@@ -60,8 +60,16 @@ def resave_fasttext_model(old_path, new_path):
 
 
 def load_embedding(TEXT, embedding_path):
-    embedding_name = os.path.basename(embedding_path)
-    embedding_dir = os.path.dirname(embedding_path)
-    vectors = Vectors(name=embedding_name,
-                      cache=embedding_dir)
+    _, file_extension = os.path.splitext(embedding_path)
+
+    if file_extension == '.bin':
+        embedding_name = os.path.basename(embedding_path)
+        embedding_dir = os.path.dirname(embedding_path)
+        vectors = Vectors(name=embedding_name,
+                          cache=embedding_dir)
+    elif file_extension == '.txt':
+        vectors = Vectors(name=embedding_path)
+    else:
+        raise NotImplementedError()
+
     TEXT.vocab.set_vectors(vectors.stoi, vectors.vectors, vectors.dim)
